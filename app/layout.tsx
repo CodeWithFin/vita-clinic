@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Asmara Wellness Spa",
+  title: "Vitapharm Wellness Spa",
   description: "An invitation to slow down. Restore your body, quiet the mind, and reconnect within.",
 };
 

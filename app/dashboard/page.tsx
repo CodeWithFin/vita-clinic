@@ -17,7 +17,12 @@ export default function Dashboard() {
 
     const userData = localStorage.getItem('user');
     if (userData) {
-      setUser(JSON.parse(userData));
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+
+      if (parsedUser.role === 'receptionist') {
+        router.push('/reception');
+      }
     }
   }, [router]);
 

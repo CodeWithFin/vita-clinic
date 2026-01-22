@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Lotus } from 'lucide-react';
+import { Flower2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -47,7 +47,11 @@ export default function LoginPage() {
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
 
-      router.push('/dashboard');
+      if (data.user.role === 'receptionist') {
+        router.push('/reception');
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -64,7 +68,7 @@ export default function LoginPage() {
         </div>
         <div className="relative z-10 text-center max-w-md">
           <div className="mx-auto w-24 h-24 mb-8 text-amber-500/80 flex items-center justify-center">
-             <Lotus size={80} strokeWidth={1} />
+             <Flower2 size={80} strokeWidth={1} />
           </div>
           <h2 className="font-display text-4xl text-amber-50 mb-6">Welcome Back</h2>
           <p className="font-light text-stone-300 text-lg leading-relaxed">
@@ -77,8 +81,8 @@ export default function LoginPage() {
       <div className="flex flex-col justify-center items-center p-8 bg-stone-900">
         <div className="w-full max-w-md space-y-8">
             <div className="text-center lg:hidden mb-8">
-                <Lotus className="mx-auto text-amber-500 mb-4" size={48} />
-                <h2 className="font-display text-3xl text-amber-50">Vita Clinic</h2>
+                <Flower2 className="mx-auto text-amber-500 mb-4" size={48} />
+                <h2 className="font-display text-3xl text-amber-50">Vitapharm</h2>
             </div>
 
             <div className="space-y-2">
