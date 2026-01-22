@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import AuthProvider from "@/components/auth-provider";
 
 export const metadata: Metadata = {
   title: "Vita Clinic - Clinic Management System",
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.Node;
+  children: React.ReactNode;
 }>) {
   return (
     <html lang="en" className="scroll-smooth">
@@ -22,7 +23,7 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-stone-900 font-body text-stone-100 antialiased selection:bg-primary selection:text-white">
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );
