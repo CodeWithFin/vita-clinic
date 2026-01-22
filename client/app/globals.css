@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+:root {
+  --background: #1c1917;
+  --foreground: #f5f5f4;
+}
+
+/* Custom Fonts */
+.font-display { font-family: 'Cinzel', serif; }
+.font-body { font-family: 'Lato', sans-serif; }
+.font-serif-custom { font-family: 'Cormorant Garamond', serif; }
+
+/* Hide scrollbar for clean look */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #1c1917; }
+::-webkit-scrollbar-thumb { background: #44403c; border-radius: 3px; }
+
+html {
+    scroll-behavior: smooth;
+}
