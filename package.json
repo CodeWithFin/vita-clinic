@@ -1,6 +1,7 @@
 {
   "name": "vita-clinic",
   "version": "1.0.0",
+  "type": "module",
   "description": "Clinic Management System for VitaPharm",
   "scripts": {
     "dev": "next dev",
@@ -41,6 +42,7 @@
     "zod": "^4.3.5"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10"
   }
