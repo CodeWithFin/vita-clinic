@@ -1,0 +1,351 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  RECEPTIONIST
+  SERVICE_PROVIDER
+}
+
+enum ServiceProviderType {
+  AESTHETICIAN
+  MASSAGE_THERAPIST
+  DOCTOR
+  MULTI_SKILLED
+}
+
+enum ClientStatus {
+  ACTIVE
+  INACTIVE
+  VIP
+  ARCHIVED
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum QueueStatus {
+  WAITING
+  IN_TREATMENT
+  COMPLETED
+}
+
+enum PaymentMethod {
+  CASH
+  MOBILE_MONEY
+  CARD
+  BANK_TRANSFER
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIAL
+  COMPLETED
+  REFUNDED
+}
+
+model User {
+  id                String               @id @default(uuid())
+  email             String               @unique
+  username          String               @unique
+  password          String
+  fullName          String
+  phone             String?
+  role              UserRole
+  providerType      ServiceProviderType?
+  profilePhoto      String?
+  isActive          Boolean              @default(true)
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  
+  appointments      Appointment[]
+  serviceRecords    ServiceRecord[]
+  servicesOffered   ServiceProvider[]
+  
+  @@map("users")
+}
+
+model Client {
+  id                String        @id @default(uuid())
+  clientId          String        @unique
+  fullName          String
+  dateOfBirth       DateTime?
+  gender            String?
+  phone             String
+  email             String?
+  address           String?
+  emergencyContact  String?
+  emergencyPhone    String?
+  profilePhoto      String?
+  status            ClientStatus  @default(ACTIVE)
+  skinType          String?
+  skinConcerns      String?
+  allergies         String?
+  contraindications String?
+  notes             String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  appointments      Appointment[]
+  queueEntries      QueueEntry[]
+  serviceRecords    ServiceRecord[]
+  payments          Payment[]
+  smsLogs           SmsLog[]
+  photos            ClientPhoto[]
+  
+  @@map("clients")
+}
+
+model ServiceCategory {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  order       Int       @default(0)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  services    Service[]
+  
+  @@map("service_categories")
+}
+
+model Service {
+  id                    String          @id @default(uuid())
+  categoryId            String
+  name                  String
+  description           String?
+  duration              Int
+  price                 Float?
+  priceRange            String?
+  priceOnConsultation   Boolean         @default(false)
+  requirements          String?
+  contraindications     String?
+  isActive              Boolean         @default(true)
+  isFeatured            Boolean         @default(false)
+  images                String[]        @default([])
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  
+  category              ServiceCategory @relation(fields: [categoryId], references: [id])
+  appointments          Appointment[]
+  serviceRecords        ServiceRecord[]
+  serviceProviders      ServiceProvider[]
+  complimentaryProducts ComplimentaryProduct[]
+  
+  @@map("services")
+}
+
+model ServiceProvider {
+  id          String   @id @default(uuid())
+  userId      String
+  serviceId   String
+  createdAt   DateTime @default(now())
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  service     Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, serviceId])
+  @@map("service_providers")
+}
+
+model Appointment {
+  id              String            @id @default(uuid())
+  clientId        String
+  serviceId       String
+  providerId      String
+  appointmentDate DateTime
+  startTime       String
+  endTime         String
+  status          AppointmentStatus @default(SCHEDULED)
+  isFirstTime     Boolean           @default(false)
+  notes           String?
+  cancellationReason String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  client          Client            @relation(fields: [clientId], references: [id])
+  service         Service           @relation(fields: [serviceId], references: [id])
+  provider        User              @relation(fields: [providerId], references: [id])
+  payment         Payment?
+  
+  @@map("appointments")
+}
+
+model QueueEntry {
+  id            String      @id @default(uuid())
+  queueNumber   String
+  clientId      String
+  serviceId     String?
+  providerId    String?
+  status        QueueStatus @default(WAITING)
+  checkInTime   DateTime    @default(now())
+  startTime     DateTime?
+  endTime       DateTime?
+  estimatedWait Int?
+  notes         String?
+  
+  client        Client      @relation(fields: [clientId], references: [id])
+  
+  @@map("queue_entries")
+}
+
+model ServiceRecord {
+  id                      String   @id @default(uuid())
+  clientId                String
+  serviceId               String
+  providerId              String
+  appointmentId           String?
+  treatmentDate           DateTime @default(now())
+  preConsultationNotes    String?
+  skinAnalysis            String?
+  treatmentDetails        String?
+  productsUsed            String[]
+  techniques              String?
+  clientComfort           String?
+  reactions               String?
+  postTreatmentCare       String?
+  followUpRecommendations String?
+  nextAppointmentSuggestion DateTime?
+  priceAdjustment         Float?
+  discountApplied         Float?
+  discountReason          String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  
+  client                  Client   @relation(fields: [clientId], references: [id])
+  service                 Service  @relation(fields: [serviceId], references: [id])
+  provider                User     @relation(fields: [providerId], references: [id])
+  photos                  ClientPhoto[]
+  
+  @@map("service_records")
+}
+
+model ClientPhoto {
+  id              String        @id @default(uuid())
+  clientId        String
+  serviceRecordId String?
+  photoUrl        String
+  photoType       String
+  uploadedAt      DateTime      @default(now())
+  notes           String?
+  
+  client          Client        @relation(fields: [clientId], references: [id])
+  serviceRecord   ServiceRecord? @relation(fields: [serviceRecordId], references: [id])
+  
+  @@map("client_photos")
+}
+
+model Payment {
+  id              String        @id @default(uuid())
+  appointmentId   String?       @unique
+  clientId        String
+  amount          Float
+  paymentMethod   PaymentMethod
+  paymentStatus   PaymentStatus @default(PENDING)
+  paidAmount      Float         @default(0)
+  balanceAmount   Float
+  discountAmount  Float?
+  discountReason  String?
+  taxAmount       Float?
+  receiptNumber   String        @unique
+  paymentDate     DateTime      @default(now())
+  notes           String?
+  refundAmount    Float?
+  refundReason    String?
+  refundDate      DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  
+  appointment     Appointment?  @relation(fields: [appointmentId], references: [id])
+  client          Client        @relation(fields: [clientId], references: [id])
+  
+  @@map("payments")
+}
+
+model Product {
+  id              String    @id @default(uuid())
+  name            String
+  category        String
+  stockLevel      Int       @default(0)
+  lowStockAlert   Int       @default(10)
+  cost            Float?
+  retailPrice     Float?
+  supplier        String?
+  expiryDate      DateTime?
+  batchNumber     String?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  complimentary   ComplimentaryProduct[]
+  
+  @@map("products")
+}
+
+model ComplimentaryProduct {
+  id          String   @id @default(uuid())
+  serviceId   String
+  productId   String
+  quantity    Int      @default(1)
+  createdAt   DateTime @default(now())
+  
+  service     Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@unique([serviceId, productId])
+  @@map("complimentary_products")
+}
+
+model SmsLog {
+  id              String    @id @default(uuid())
+  clientId        String
+  phoneNumber     String
+  message         String
+  messageType     String
+  status          String
+  deliveryStatus  String?
+  sentAt          DateTime  @default(now())
+  deliveredAt     DateTime?
+  failureReason   String?
+  
+  client          Client    @relation(fields: [clientId], references: [id])
+  
+  @@map("sms_logs")
+}
+
+model SystemConfig {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+  
+  @@map("system_configs")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  action      String
+  entity      String
+  entityId    String?
+  details     String?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  
+  @@map("audit_logs")
+}
