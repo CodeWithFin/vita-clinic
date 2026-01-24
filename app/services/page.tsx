@@ -1,8 +1,27 @@
 import { Flower2, ArrowLeft, Check } from 'lucide-react';
 import Link from 'next/link';
 
+interface SubItem {
+  name: string;
+  price?: string;
+  description?: string;
+}
+
+interface ServiceItem {
+  name: string;
+  price?: string;
+  description?: string;
+  subItems?: SubItem[];
+}
+
+interface Category {
+  title: string;
+  note?: string;
+  items: ServiceItem[];
+}
+
 export default function Services() {
-  const categories = [
+  const categories: Category[] = [
     {
       title: "Facial Treatments",
       note: "A free product is included with every facial.",
