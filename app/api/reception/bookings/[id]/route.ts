@@ -39,31 +39,15 @@ export async function PATCH(
 
     const updatedBooking = result.rows[0];
 
-    // Send SMS notification for status changes
+    // SMS notification removed as per request
+    /*
     try {
         const userRes = await db.query('SELECT name, phone FROM users WHERE id = $1', [updatedBooking.user_id]);
-        if (userRes.rows.length > 0) {
-            const { name, phone } = userRes.rows[0];
-            const dateStr = new Date(updatedBooking.appointment_date).toLocaleDateString();
-            const timeStr = new Date(updatedBooking.appointment_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
-            let message = '';
-            if (status.toLowerCase() === 'confirmed') {
-                message = `Hello ${name}, your booking for ${updatedBooking.service_type} on ${dateStr} at ${timeStr} has been CONFIRMED. Check in 10 mins early. - Vitapharm`;
-            } else if (status.toLowerCase() === 'cancelled') {
-                 message = `Hello ${name}, your booking for ${updatedBooking.service_type} on ${dateStr} has been CANCELLED. Please contact us for details. - Vitapharm`;
-            } else if (status.toLowerCase() === 'completed') {
-                 message = `Hello ${name}, thank you for visiting Vitapharm. We hope to see you again!`;
-            }
-
-            if (message) {
-                await sendSMS(phone, message);
-            }
-        }
+        // ... SMS logic removed ...
     } catch (smsError) {
         console.error("Failed to send status update SMS", smsError);
-        // We generally don't want to fail the request if SMS fails, just log it
     }
+    */
 
     return NextResponse.json(updatedBooking);
   } catch (error) {

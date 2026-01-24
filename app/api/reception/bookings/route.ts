@@ -14,6 +14,7 @@ export async function GET(req: Request) {
         a.service_type, 
         a.appointment_date, 
         a.status, 
+        u.id as user_id,
         u.name as client_name, 
         u.phone, 
         u.email 

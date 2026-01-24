@@ -60,8 +60,8 @@ export default function BookPage() {
         </div>
         <h2 className="text-3xl font-serif-custom text-stone-100 mb-4">Booking Confirmed</h2>
         <p className="text-stone-400 max-w-md mb-8">
-          Thank you, {formData.name}. Your appointment for {formData.service} has been received. 
-          We will contact you shortly at {formData.phone} to confirm the details.
+          Thank you, {formData.name}. Your appointment for {formData.service} has been confirmed. 
+          We look forward to seeing you.
         </p>
         <Link href="/" className="px-8 py-3 border border-stone-700 text-stone-300 hover:text-white hover:border-white transition-colors uppercase tracking-widest text-xs">
           Return Home

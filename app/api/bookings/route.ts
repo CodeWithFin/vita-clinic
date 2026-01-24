@@ -51,12 +51,12 @@ export async function POST(req: Request) {
     // 2. Create Appointment
     await db.query(
       `INSERT INTO appointments (user_id, service_type, appointment_date, status)
-       VALUES ($1, $2, $3, 'pending')`,
+       VALUES ($1, $2, $3, 'confirmed')`,
        [userId, service, appointmentDate]
     );
 
     // 3. Send SMS
-    const message = `Hello ${name}, your booking for ${service} on ${date} at ${time} is received. We will confirm shortly. - Vitapharm`;
+    const message = `Hello ${name}, your booking for ${service} on ${date} at ${time} is confirmed! We look forward to seeing you. - Vitapharm`;
     await sendSMS(formattedPhone, message);
 
     return NextResponse.json({ success: true });

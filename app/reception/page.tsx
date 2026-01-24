@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar, Clock, User, Phone, CheckCircle, XCircle, AlertCircle, Search, RefreshCcw, Plus } from 'lucide-react';
+import { Calendar, Clock, User, Phone, CheckCircle, XCircle, AlertCircle, Search, RefreshCcw, Plus, FileText, Activity, Users, ClipboardList } from 'lucide-react';
 
 interface Booking {
   id: number;
@@ -12,15 +12,42 @@ interface Booking {
   service_type: string;
   appointment_date: string;
   status: string;
+  user_id?: number;
+}
+
+interface QueueItem {
+    id: number;
+    ticket_number: string;
+    client_name: string;
+    phone: string;
+    user_id: number;
+    created_at: string;
+}
+
+interface PatientRecord {
+    id: number;
+    content: string;
+    created_at: string;
 }
 
 export default function ReceptionPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [patientRecords, setPatientRecords] = useState<PatientRecord[]>([]);
+  const [newRecord, setNewRecord] = useState('');
+  
   const [loading, setLoading] = useState(true);
+  const [queueLoading, setQueueLoading] = useState(false);
+  const [recordsLoading, setRecordsLoading] = useState(false);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
+  
+  // Tabs for the Manage Modal: 'status' | 'records'
+  const [manageTab, setManageTab] = useState<'status' | 'records'>('status');
+
   const [newBooking, setNewBooking] = useState({
     name: '',
     phone: '',
@@ -57,6 +84,36 @@ export default function ReceptionPage() {
     }
   };
 
+  const fetchQueue = async () => {
+      try {
+          setQueueLoading(true);
+          const res = await fetch('/api/queue', { cache: 'no-store' });
+          if (res.ok) {
+              const data = await res.json();
+              setQueue(data);
+          }
+      } catch (error) {
+          console.error("Queue fetch error", error);
+      } finally {
+          setQueueLoading(false);
+      }
+  };
+
+  const fetchRecords = async (userId: number) => {
+      try {
+          setRecordsLoading(true);
+          const res = await fetch(`/api/patients/${userId}/records`, { cache: 'no-store' });
+          if (res.ok) {
+              const data = await res.json();
+              setPatientRecords(data);
+          }
+      } catch (error) {
+          console.error("Records fetch error", error);
+      } finally {
+          setRecordsLoading(false);
+      }
+  };
+
   useEffect(() => {
     // Auth Check
     const token = localStorage.getItem('token');
@@ -71,14 +128,26 @@ export default function ReceptionPage() {
     
     // Initial fetch
     fetchBookings();
+    fetchQueue();
 
     // Real-time updates: Poll every 10 seconds
     const interval = setInterval(() => {
         fetchBookings(true);
+        fetchQueue();
     }, 10000);
 
     return () => clearInterval(interval);
   }, [router]);
+
+  useEffect(() => {
+      if (selectedBooking && selectedBooking.user_id) {
+          // Reset context when opening a new booking
+          setManageTab('status');
+          fetchRecords(selectedBooking.user_id);
+      } else {
+          setPatientRecords([]);
+      }
+  }, [selectedBooking]);
 
   const handleCreateBooking = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,6 +190,51 @@ export default function ReceptionPage() {
     } catch (error) {
         console.error('Update error', error);
     }
+  };
+
+  const handleQueueAction = async (id: number) => {
+      try {
+          const res = await fetch(`/api/queue/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+              fetchQueue();
+          }
+      } catch (error) {
+          console.error("Queue action error", error);
+      }
+  };
+
+  const handleAddRecord = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!selectedBooking?.user_id || !newRecord.trim()) return;
+
+      try {
+          const res = await fetch(`/api/patients/${selectedBooking.user_id}/records`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ content: newRecord })
+          });
+          
+          if (res.ok) {
+              setNewRecord('');
+              fetchRecords(selectedBooking.user_id);
+          }
+      } catch (error) {
+          console.error("Add record error", error);
+      }
+  };
+
+  const handleBookNextVisit = () => {
+      if (!selectedBooking) return;
+      
+      setNewBooking({
+          name: selectedBooking.client_name,
+          phone: selectedBooking.phone,
+          service: '',
+          date: '',
+          time: ''
+      });
+      setSelectedBooking(null);
+      setShowModal(true);
   };
 
   const filteredBookings = bookings.filter(booking => 
@@ -177,7 +291,7 @@ export default function ReceptionPage() {
                 New Booking
             </button>
              <button 
-                onClick={fetchBookings}
+                onClick={() => { fetchBookings(); fetchQueue(); }}
                 className="flex items-center gap-2 px-4 py-2 bg-stone-900 border border-stone-800 rounded-sm hover:bg-stone-800 transition-colors text-sm"
             >
                 <RefreshCcw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -195,100 +309,141 @@ export default function ReceptionPage() {
           </div>
         </div>
 
-        {/* Stats / Overview (Mocked for visual) */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-             <div className="bg-stone-900/50 border border-stone-800 p-4 rounded-sm">
-                <span className="text-stone-500 text-xs uppercase tracking-wider">Today's Appointments</span>
-                <p className="text-2xl font-light text-white mt-1">{bookings.length}</p>
-             </div>
-             <div className="bg-stone-900/50 border border-stone-800 p-4 rounded-sm">
-                <span className="text-stone-500 text-xs uppercase tracking-wider">Pending</span>
-                <p className="text-2xl font-light text-amber-400 mt-1">{bookings.filter(b => b.status === 'pending').length}</p>
-             </div>
-             <div className="bg-stone-900/50 border border-stone-800 p-4 rounded-sm">
-                <span className="text-stone-500 text-xs uppercase tracking-wider">In Service</span>
-                <p className="text-2xl font-light text-blue-400 mt-1">0</p>
-             </div>
-        </div>
+        {/* Stats / Overview with Queue */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+             {/* Left Column: Stats */}
+             <div className="lg:col-span-3 space-y-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-stone-900/50 border border-stone-800 p-4 rounded-sm">
+                        <span className="text-stone-500 text-xs uppercase tracking-wider">Today's Appointments</span>
+                        <p className="text-2xl font-light text-white mt-1">{bookings.length}</p>
+                    </div>
+                     <div className="bg-stone-900/50 border border-stone-800 p-4 rounded-sm">
+                        <span className="text-stone-500 text-xs uppercase tracking-wider">In Service</span>
+                        <p className="text-2xl font-light text-blue-400 mt-1">{queue.length}</p>
+                    </div>
+                </div>
 
-        {/* Controls */}
-        <div className="flex items-center bg-stone-900 border border-stone-800 px-4 py-2 rounded-sm max-w-md">
-            <Search className="w-4 h-4 text-stone-500 mr-2" />
-            <input 
-                type="text" 
-                placeholder="Search Client, Phone, or Service..." 
-                className="bg-transparent border-none outline-none text-sm w-full placeholder:text-stone-600"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-            />
-        </div>
+                {/* Controls */}
+                <div className="flex items-center bg-stone-900 border border-stone-800 px-4 py-2 rounded-sm max-w-md">
+                    <Search className="w-4 h-4 text-stone-500 mr-2" />
+                    <input 
+                        type="text" 
+                        placeholder="Search Client, Phone, or Service..." 
+                        className="bg-transparent border-none outline-none text-sm w-full placeholder:text-stone-600"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
 
-        {/* Table */}
-        <div className="border border-stone-800 rounded-sm overflow-hidden">
-            <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                    <thead className="bg-[#1c1c1a] text-stone-400 uppercase tracking-wider text-xs font-medium border-b border-stone-800">
-                        <tr>
-                            <th className="px-6 py-4">Status</th>
-                            <th className="px-6 py-4">Time</th>
-                            <th className="px-6 py-4">Client</th>
-                            <th className="px-6 py-4">Service</th>
-                            <th className="px-6 py-4">Contacts</th>
-                            <th className="px-6 py-4 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-stone-800/50">
-                        {loading ? (
-                            <tr><td colSpan={6} className="px-6 py-8 text-center text-stone-500">Loading bookings...</td></tr>
-                        ) : filteredBookings.length === 0 ? (
-                             <tr><td colSpan={6} className="px-6 py-8 text-center text-stone-500">No bookings found matching your search.</td></tr>
-                        ) : (
-                            filteredBookings.map((booking) => (
-                                <tr key={booking.id} className="hover:bg-stone-900/50 transition-colors group">
-                                    <td className="px-6 py-4">
-                                        <span className={`px-2 py-1 rounded-full text-[10px] uppercase tracking-wide border ${getStatusColor(booking.status)}`}>
-                                            {booking.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex flex-col">
-                                            <span className="text-stone-200 font-medium">{formatTime(booking.appointment_date)}</span>
-                                            <span className="text-stone-500 text-xs">{formatDate(booking.appointment_date)}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-stone-800 flex items-center justify-center text-stone-400 text-xs">
-                                                <User className="w-4 h-4" />
-                                            </div>
-                                            <span className="text-stone-200">{booking.client_name}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-stone-300">
-                                        {booking.service_type}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex flex-col text-xs text-stone-400 gap-1">
-                                            {booking.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {booking.phone}</span>}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-right">
-                                        <button 
-                                            onClick={() => setSelectedBooking(booking)}
-                                            className="text-stone-500 hover:text-white transition-colors text-xs underline decoration-stone-700 underline-offset-4"
-                                        >
-                                            Manage
-                                        </button>
-                                    </td>
+                {/* Table */}
+                <div className="border border-stone-800 rounded-sm overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm">
+                            <thead className="bg-[#1c1c1a] text-stone-400 uppercase tracking-wider text-xs font-medium border-b border-stone-800">
+                                <tr>
+                                    <th className="px-6 py-4">Status</th>
+                                    <th className="px-6 py-4">Time</th>
+                                    <th className="px-6 py-4">Client</th>
+                                    <th className="px-6 py-4">Service</th>
+                                    <th className="px-6 py-4">Contacts</th>
+                                    <th className="px-6 py-4 text-right">Actions</th>
                                 </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                            </thead>
+                            <tbody className="divide-y divide-stone-800/50">
+                                {loading ? (
+                                    <tr><td colSpan={6} className="px-6 py-8 text-center text-stone-500">Loading bookings...</td></tr>
+                                ) : filteredBookings.length === 0 ? (
+                                    <tr><td colSpan={6} className="px-6 py-8 text-center text-stone-500">No bookings found matching your search.</td></tr>
+                                ) : (
+                                    filteredBookings.map((booking) => (
+                                        <tr key={booking.id} className="hover:bg-stone-900/50 transition-colors group">
+                                            <td className="px-6 py-4">
+                                                <span className={`px-2 py-1 rounded-full text-[10px] uppercase tracking-wide border ${getStatusColor(booking.status)}`}>
+                                                    {booking.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex flex-col">
+                                                    <span className="text-stone-200 font-medium">{formatTime(booking.appointment_date)}</span>
+                                                    <span className="text-stone-500 text-xs">{formatDate(booking.appointment_date)}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-stone-800 flex items-center justify-center text-stone-400 text-xs">
+                                                        <User className="w-4 h-4" />
+                                                    </div>
+                                                    <span className="text-stone-200">{booking.client_name}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-stone-300">
+                                                {booking.service_type}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex flex-col text-xs text-stone-400 gap-1">
+                                                    {booking.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {booking.phone}</span>}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <button 
+                                                    onClick={() => setSelectedBooking(booking)}
+                                                    className="text-stone-500 hover:text-white transition-colors text-xs underline decoration-stone-700 underline-offset-4"
+                                                >
+                                                    Manage
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+             </div>
+
+             {/* Right Column: Queue */}
+             <div className="lg:col-span-1 border-l border-stone-800 lg:pl-6 space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-stone-800">
+                    <h3 className="text-sm uppercase tracking-wider text-stone-400 flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        Live Queue
+                    </h3>
+                    <span className="bg-[#4A5D4F] text-white text-[10px] px-1.5 py-0.5 rounded-full">{queue.length}</span>
+                </div>
+                
+                <div className="space-y-3">
+                    {queueLoading ? (
+                        <p className="text-xs text-stone-500 italic">Updating queue...</p>
+                    ) : queue.length === 0 ? (
+                        <div className="p-8 text-center border border-dashed border-stone-800 bg-stone-900/30 rounded-sm">
+                            <p className="text-xs text-stone-500">The waiting list is empty.</p>
+                        </div>
+                    ) : (
+                        queue.map((item) => (
+                            <div key={item.id} className="bg-stone-900 border border-stone-800 p-3 rounded-sm hover:border-stone-700 transition-colors group relative">
+                                <div className="flex justify-between items-start mb-2">
+                                    <span className="text-xl font-serif-custom text-white">{item.ticket_number}</span>
+                                    <button 
+                                        onClick={() => handleQueueAction(item.id)}
+                                        className="text-stone-600 hover:text-red-400 transition-colors p-1"
+                                        title="Mark as Served / Remove"
+                                    >
+                                        <XCircle className="w-4 h-4" />
+                                    </button>
+                                </div>
+                                <p className="text-sm text-stone-300 font-medium truncate">{item.client_name}</p>
+                                <p className="text-xs text-stone-500 mt-1 flex items-center gap-1">
+                                    <Clock className="w-3 h-3" /> {new Date(item.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+                                </p>
+                            </div>
+                        ))
+                    )}
+                </div>
+             </div>
         </div>
 
-        {/* Modal */}
+        {/* Modal: New Booking */}
         {showModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
                 <div className="bg-stone-900 border border-stone-800 p-8 rounded-sm w-full max-w-md space-y-6 relative">
@@ -368,76 +523,156 @@ export default function ReceptionPage() {
             </div>
         )}
 
-        {/* Manage Modal */}
+        {/* Modal: Manage Booking & Records */}
         {selectedBooking && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                <div className="bg-stone-900 border border-stone-800 p-8 rounded-sm w-full max-w-sm space-y-6 relative">
-                    <button 
-                        onClick={() => setSelectedBooking(null)}
-                        className="absolute top-4 right-4 text-stone-500 hover:text-white"
-                    >
-                        <XCircle className="w-6 h-6" />
-                    </button>
-                    
-                    <div className="space-y-1">
-                        <span className="text-xs uppercase text-stone-500 tracking-wider">Managing Booking</span>
-                        <h2 className="font-serif-custom text-2xl text-white">{selectedBooking.client_name}</h2>
-                        <p className="text-stone-400 text-sm font-medium text-[#4A5D4F]">{selectedBooking.service_type}</p>
-                        
-                        <div className="grid grid-cols-2 gap-4 pt-4 pb-2">
-                             <div className="bg-stone-950/50 p-3 rounded-sm border border-stone-800">
-                                <span className="text-[10px] uppercase text-stone-500 tracking-wider block mb-1">Contact</span>
-                                <div className="space-y-1">
-                                    <p className="text-sm text-stone-300 flex items-center gap-2">
-                                        <Phone className="w-3 h-3" /> {selectedBooking.phone || 'N/A'}
-                                    </p>
-                                    {selectedBooking.email && (
-                                        <p className="text-xs text-stone-400 truncate">{selectedBooking.email}</p>
+                <div className="bg-stone-900 border border-stone-800 rounded-sm w-full max-w-lg relative flex flex-col max-h-[90vh] overflow-hidden">
+                    {/* Header */}
+                    <div className="p-6 border-b border-stone-800 flex justify-between items-start">
+                        <div>
+                             <span className="text-xs uppercase text-stone-500 tracking-wider">Patient Management</span>
+                             <h2 className="font-serif-custom text-2xl text-white mt-1">{selectedBooking.client_name}</h2>
+                             <p className="text-stone-400 text-xs flex items-center gap-2 mt-2">
+                                <Phone className="w-3 h-3" /> {selectedBooking.phone || 'N/A'}
+                                <span className="text-stone-600">•</span>
+                                {selectedBooking.email || 'No Email'}
+                             </p>
+                        </div>
+                        <button 
+                            onClick={() => setSelectedBooking(null)}
+                            className="text-stone-500 hover:text-white"
+                        >
+                            <XCircle className="w-6 h-6" />
+                        </button>
+                    </div>
+
+                    {/* Tabs */}
+                    <div className="flex border-b border-stone-800">
+                        <button 
+                            onClick={() => setManageTab('status')}
+                            className={`flex-1 py-3 text-xs uppercase tracking-wider font-medium transition-colors ${manageTab === 'status' ? 'bg-stone-800/50 text-white border-b-2 border-[#4A5D4F]' : 'text-stone-500 hover:text-stone-300'}`}
+                        >
+                            Appointment
+                        </button>
+                        <button 
+                            onClick={() => setManageTab('records')}
+                            className={`flex-1 py-3 text-xs uppercase tracking-wider font-medium transition-colors ${manageTab === 'records' ? 'bg-stone-800/50 text-white border-b-2 border-[#4A5D4F]' : 'text-stone-500 hover:text-stone-300'}`}
+                        >
+                            Medical Records
+                        </button>
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-6 overflow-y-auto">
+                        {manageTab === 'status' ? (
+                            <div className="space-y-6">
+                                <div className="grid grid-cols-2 gap-4">
+                                     <div className="bg-stone-950/50 p-4 rounded-sm border border-stone-800">
+                                        <span className="text-[10px] uppercase text-stone-500 tracking-wider block mb-2">Service</span>
+                                        <p className="text-stone-200 font-medium">{selectedBooking.service_type}</p>
+                                     </div>
+                                     <div className="bg-stone-950/50 p-4 rounded-sm border border-stone-800">
+                                        <span className="text-[10px] uppercase text-stone-500 tracking-wider block mb-2">Schedule</span>
+                                        <p className="text-stone-200">{new Date(selectedBooking.appointment_date).toLocaleDateString()}</p>
+                                        <p className="text-stone-400 text-sm">{new Date(selectedBooking.appointment_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                                     </div>
+                                </div>
+                                
+                                <div className="space-y-3">
+                                    <p className="text-xs uppercase text-stone-500 tracking-wider">Actions</p>
+                                    <button 
+                                        onClick={async () => {
+                                            if (!selectedBooking?.user_id) return;
+                                            try {
+                                                const res = await fetch('/api/queue/join', {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({ userId: selectedBooking.user_id })
+                                                });
+                                                if (res.ok) {
+                                                    fetchQueue();
+                                                    alert('Patient added to queue');
+                                                } else {
+                                                    alert('Failed or already in queue');
+                                                }
+                                            } catch (e) {
+                                                console.error(e);
+                                            }
+                                        }}
+                                        disabled={queue.some(q => q.user_id === selectedBooking.user_id)}
+                                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#4A5D4F] text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#3d4d41] rounded-sm text-xs font-medium uppercase tracking-wide transition-colors"
+                                    >
+                                        {queue.some(q => q.user_id === selectedBooking.user_id) ? (
+                                            <>
+                                                <CheckCircle className="w-4 h-4" />
+                                                In Queue
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Plus className="w-4 h-4" />
+                                                Add to Queue
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                                <div className="space-y-3">
+                                    <p className="text-xs uppercase text-stone-500 tracking-wider">Update Status</p>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button onClick={() => handleStatusUpdate('completed')} className="px-4 py-3 bg-blue-900/20 border border-blue-900/50 text-blue-400 hover:bg-blue-900/40 rounded-sm text-xs font-medium uppercase tracking-wide transition-colors">Complete</button>
+                                        <button onClick={() => handleStatusUpdate('cancelled')} className="px-4 py-3 bg-red-900/20 border border-red-900/50 text-red-400 hover:bg-red-900/40 rounded-sm text-xs font-medium uppercase tracking-wide transition-colors">Cancel</button>
+                                    </div>
+                                </div>
+
+                                <div className="pt-4 border-t border-stone-800">
+                                    <button 
+                                        onClick={handleBookNextVisit}
+                                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-stone-800 text-stone-200 hover:bg-stone-700 rounded-sm text-xs font-medium uppercase tracking-wide transition-colors"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                        Book Next Visit
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                <div className="space-y-4">
+                                    <h3 className="text-xs uppercase text-stone-500 tracking-wider">Patient History</h3>
+                                    {recordsLoading ? (
+                                        <p className="text-xs text-stone-500">Loading records...</p>
+                                    ) : patientRecords.length === 0 ? (
+                                        <div className="p-4 border border-dashed border-stone-800 rounded-sm text-center">
+                                            <p className="text-xs text-stone-500">No records found for this patient.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                                            {patientRecords.map(record => (
+                                                <div key={record.id} className="bg-stone-950 border border-stone-800 p-3 rounded-sm space-y-1">
+                                                    <p className="text-xs text-stone-500">{new Date(record.created_at).toLocaleString()}</p>
+                                                    <p className="text-sm text-stone-300 whitespace-pre-wrap">{record.content}</p>
+                                                </div>
+                                            ))}
+                                        </div>
                                     )}
                                 </div>
-                             </div>
-                             <div className="bg-stone-950/50 p-3 rounded-sm border border-stone-800">
-                                <span className="text-[10px] uppercase text-stone-500 tracking-wider block mb-1">Time</span>
-                                <div className="space-y-1">
-                                    <p className="text-sm text-stone-300 flex items-center gap-2">
-                                        <Calendar className="w-3 h-3" /> {new Date(selectedBooking.appointment_date).toLocaleDateString()}
-                                    </p>
-                                    <p className="text-sm text-stone-300 flex items-center gap-2">
-                                        <Clock className="w-3 h-3" /> {new Date(selectedBooking.appointment_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                    </p>
-                                </div>
-                             </div>
-                        </div>
-                    </div>
-                    
-                    <div className="space-y-4 pt-4 border-t border-stone-800">
-                        <p className="text-xs uppercase text-stone-500 tracking-wider">Update Status</p>
-                        <div className="grid grid-cols-2 gap-3">
-                            <button 
-                                onClick={() => handleStatusUpdate('confirmed')}
-                                className="px-4 py-3 bg-green-900/20 border border-green-900/50 text-green-400 hover:bg-green-900/40 rounded-sm text-xs font-medium uppercase tracking-wide transition-colors"
-                            >
-                                Confirm
-                            </button>
-                            <button 
-                                onClick={() => handleStatusUpdate('completed')}
-                                className="px-4 py-3 bg-blue-900/20 border border-blue-900/50 text-blue-400 hover:bg-blue-900/40 rounded-sm text-xs font-medium uppercase tracking-wide transition-colors"
-                            >
-                                Complete
-                            </button>
-                             <button 
-                                onClick={() => handleStatusUpdate('pending')}
-                                className="px-4 py-3 bg-amber-900/20 border border-amber-900/50 text-amber-400 hover:bg-amber-900/40 rounded-sm text-xs font-medium uppercase tracking-wide transition-colors"
-                            >
-                                Pending
-                            </button>
-                            <button 
-                                onClick={() => handleStatusUpdate('cancelled')}
-                                className="px-4 py-3 bg-red-900/20 border border-red-900/50 text-red-400 hover:bg-red-900/40 rounded-sm text-xs font-medium uppercase tracking-wide transition-colors"
-                            >
-                                Cancel
-                            </button>
-                        </div>
+
+                                <form onSubmit={handleAddRecord} className="space-y-3 pt-4 border-t border-stone-800">
+                                     <h3 className="text-xs uppercase text-stone-500 tracking-wider">Add Note</h3>
+                                     <textarea 
+                                        className="w-full h-24 bg-stone-950 border border-stone-800 p-3 text-sm text-stone-300 focus:outline-none focus:border-[#4A5D4F] rounded-sm"
+                                        placeholder="Enter clinical notes, preferences, or observations..."
+                                        value={newRecord}
+                                        onChange={(e) => setNewRecord(e.target.value)}
+                                     ></textarea>
+                                     <button 
+                                        type="submit"
+                                        disabled={!newRecord.trim()}
+                                        className="w-full px-4 py-2 bg-[#4A5D4F] text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#3d4d41] rounded-sm text-xs font-medium uppercase tracking-wide transition-colors"
+                                     >
+                                        Save Record
+                                     </button>
+                                </form>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

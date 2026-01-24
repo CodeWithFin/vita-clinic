@@ -563,8 +563,8 @@ export default function Home() {
                 <li>Adlife Plaza, Mezzanine Floor</li>
                 <li>Kilimani, Nairobi</li>
                 <li className="pt-2">
-                  <a href="mailto:hello@vitapharm.com" className="hover:text-white transition-colors">
-                    hello@vitapharm.com
+                  <a href="mailto:vitapharmab@gmail.com" className="hover:text-white transition-colors">
+                    vitapharmab@gmail.com
                   </a>
                 </li>
                 <li>+254 718 171 253</li>

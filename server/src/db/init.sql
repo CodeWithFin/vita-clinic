@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS appointments (
     user_id INTEGER REFERENCES users(id),
     service_type VARCHAR(100) NOT NULL,
     appointment_date TIMESTAMP NOT NULL,
-    status VARCHAR(20) DEFAULT 'pending', -- 'pending', 'confirmed', 'completed', 'cancelled'
+    status VARCHAR(20) DEFAULT 'confirmed', -- 'pending', 'confirmed', 'completed', 'cancelled'
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
