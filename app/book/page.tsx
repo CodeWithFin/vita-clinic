@@ -127,11 +127,17 @@ export default function BookPage() {
                                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-600" />
                                 <input 
                                     required
-                                    type="tel" 
+                                    type="tel"
+                                    pattern="07[0-9]{8}"
                                     className="w-full bg-stone-900 border border-stone-800 focus:border-[#4A5D4F] outline-none py-3 pl-10 pr-4 text-stone-300 text-sm rounded-sm"
-                                    placeholder="+254..."
+                                    placeholder="0712345678"
+                                    title="Please enter a valid phone number starting with 07 (e.g., 0712345678)"
                                     value={formData.phone}
-                                    onChange={e => setFormData({...formData, phone: e.target.value})}
+                                    onChange={e => {
+                                        // Only allow digits to be typed
+                                        const val = e.target.value.replace(/\D/g, '');
+                                        setFormData({...formData, phone: val});
+                                    }}
                                 />
                             </div>
                         </div>

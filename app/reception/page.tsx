@@ -471,10 +471,16 @@ export default function ReceptionPage() {
                             <label className="text-xs uppercase text-stone-500">Phone</label>
                             <input 
                                 required
-                                type="tel" 
+                                type="tel"
+                                pattern="07[0-9]{8}"
+                                title="Please enter a valid phone number starting with 07 (e.g., 0712345678)"
                                 className="w-full bg-stone-950 border border-stone-800 p-3 text-stone-300 text-sm rounded-sm"
+                                placeholder="0712345678"
                                 value={newBooking.phone}
-                                onChange={e => setNewBooking({...newBooking, phone: e.target.value})}
+                                onChange={e => {
+                                    const val = e.target.value.replace(/\D/g, '');
+                                    setNewBooking({...newBooking, phone: val});
+                                }}
                             />
                         </div>
                         <div className="space-y-2">
