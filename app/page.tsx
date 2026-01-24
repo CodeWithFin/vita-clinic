@@ -1,11 +1,10 @@
 import { 
-  Lotus, 
+  Flower2, 
   ChevronDown, 
   Leaf, 
   ArrowDown, 
   Sparkles, 
   Droplets, 
-  Flower2, 
   ArrowRight, 
   Quote, 
   Clock, 
@@ -18,13 +17,14 @@ import {
   Twitter,
   Waves
 } from 'lucide-react';
+import Link from 'next/link';
 
 export default function Home() {
   return (
     <>
       {/* Fixed Background Layer */}
       <div className="fixed inset-0 z-0">
-        <img src="https://images.unsplash.com/photo-1722483173894-74b0de110e54?w=2560&q=80" alt="Bali Misty Mountains" className="object-center brightness-[1] contrast-[0.95] saturate-[0.8] w-full h-full object-cover" />
+        <img src="https://images.unsplash.com/photo-1722483173894-74b0de110e54?w=2560&q=80" alt="Kilimani Misty Mountains" className="object-center brightness-[1] contrast-[0.95] saturate-[0.8] w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/30 to-black/60"></div>
         <div className="absolute inset-0 bg-stone-950/20"></div>
       </div>
@@ -33,11 +33,11 @@ export default function Home() {
       <header className="fixed z-50 flex md:px-12 lg:px-20 xl:px-24 transition-all duration-300 backdrop-blur-[2px] bg-gradient-to-b from-stone-900/90 to-transparent w-full pt-6 pr-6 pb-6 pl-6 top-0 right-0 left-0 items-center justify-between">
         <div className="flex items-center gap-3 select-none cursor-pointer group">
           <div className="relative flex items-center justify-center">
-            <Lotus className="h-8 w-8 text-stone-200 transition-transform duration-700 ease-out group-hover:rotate-180" strokeWidth={1.2} />
+            <Flower2 className="h-8 w-8 text-stone-200 transition-transform duration-700 ease-out group-hover:rotate-180" strokeWidth={1.2} />
           </div>
           <div className="flex flex-col">
             <span className="font-display text-lg tracking-tight text-white group-hover:text-stone-200 transition-colors">
-              Asmara
+              Vitapharm
             </span>
             <span className="text-[0.65rem] uppercase tracking-[0.2em] text-stone-300 font-light">
               Wellness Spa
@@ -66,7 +66,7 @@ export default function Home() {
                   <ChevronDown className="opacity-0 -translate-x-2 group-hover/item:opacity-100 group-hover/item:translate-x-0 transition-all duration-300 text-stone-200 w-3 h-3 -rotate-90" />
                 </a>
                 <div className="h-px bg-stone-800 my-1 mx-4"></div>
-                <a href="#" className="px-5 py-2.5 text-xs uppercase tracking-wider text-stone-300 hover:text-white hover:bg-stone-800/50 transition-colors">
+                <a href="/services" className="px-5 py-2.5 text-xs uppercase tracking-wider text-stone-300 hover:text-white hover:bg-stone-800/50 transition-colors">
                   View Full Menu
                 </a>
               </div>
@@ -82,9 +82,9 @@ export default function Home() {
         </nav>
 
         <div className="flex gap-6 gap-x-6 gap-y-6 items-center">
-          <button className="hidden md:block uppercase hover:bg-[#3d4d41] hover:border-stone-400 transition-all duration-300 shadow-stone-950/20 text-xs font-medium text-white tracking-[0.15em] bg-[#4A5D4F]/80 border-[#647a6a] border rounded-sm pt-3 pr-8 pb-3 pl-8 shadow-xl backdrop-blur-md">
+          <Link href="/book" className="hidden md:block uppercase hover:bg-[#3d4d41] hover:border-stone-400 transition-all duration-300 shadow-stone-950/20 text-xs font-medium text-white tracking-[0.15em] bg-[#4A5D4F]/80 border-[#647a6a] border rounded-sm pt-3 pr-8 pb-3 pl-8 shadow-xl backdrop-blur-md">
             Book Now
-          </button>
+          </Link>
           <button className="lg:hidden text-white">
             <Leaf className="lucide lucide-leaf w-[28px] h-[28px]" />
           </button>
@@ -97,25 +97,24 @@ export default function Home() {
         <section className="min-h-screen flex flex-col md:px-12 lg:px-20 xl:px-24 pt-32 pr-6 pb-12 pl-6 relative justify-end">
           <div className="flex flex-col md:flex-row md:items-start md:mb-32 w-full mb-16 gap-x-12 gap-y-12 justify-between">
             <div className="max-w-xl">
-              <p className="md:text-4xl leading-relaxed text-2xl font-light italic text-stone-100 tracking-wide font-cormorant">An invitation to slow down.
-              Restore your body, quiet the mind, and reconnect within.</p>
+              <p className="md:text-4xl leading-relaxed text-2xl font-light italic text-stone-100 tracking-wide font-cormorant">Aesthetics by Vitapharm Spa Clinic offers a range of aesthetic, therapeutic, and medical skincare services.</p>
             </div>
 
             <div className="flex flex-col gap-6 text-base md:text-lg font-light text-stone-200 md:text-right border-l md:border-l-0 md:border-r border-stone-500/30 pl-6 md:pr-6 md:pl-0">
               <div className="space-y-1">
                 <h3 className="font-medium text-white tracking-tight">
-                  Jalan Pantai Batu Bolong,
+                  Adlife Plaza, Mezzanine Floor,
                 </h3>
-                <p className="opacity-90">Canggu, Bali 80361</p>
+                <p className="opacity-90">Kilimani, Nairobi</p>
               </div>
               <div className="space-y-1">
                 <div className="flex flex-col md:flex-row md:justify-end gap-2 md:gap-8">
                   <span className="opacity-70">Mon–Fri:</span>
-                  <span className="text-white font-normal">09:00–21:00</span>
+                  <span className="text-white font-normal">09:00–19:45</span>
                 </div>
                 <div className="flex flex-col md:flex-row md:justify-end gap-2 md:gap-8">
                   <span className="opacity-70">Sat–Sun:</span>
-                  <span className="text-white font-normal">10:00–20:00</span>
+                  <span className="text-white font-normal">10:00–19:45</span>
                 </div>
               </div>
             </div>
@@ -124,11 +123,11 @@ export default function Home() {
           <div className="relative w-full">
             <div className="mb-2 md:mb-[-1.5%] relative z-10 pl-1 md:pl-4">
               <h2 className="font-serif-custom text-3xl md:text-5xl italic tracking-tight text-white font-light">
-                Wellness Spa in Bali
+                Wellness Spa in Kilimani
               </h2>
             </div>
             <h1 className="md:text-left text-[15vw] leading-[0.75] bg-clip-text md:-ml-4 select-none z-20 text-transparent tracking-tight font-display text-center bg-gradient-to-b from-stone-100 to-stone-500/10 opacity-30 mix-blend-overlay w-full relative">
-              ASMARA
+              VITAPHARM
             </h1>
 
             {/* Decorative SVG */}
@@ -164,7 +163,7 @@ export default function Home() {
               </h2>
               <p className="text-lg text-stone-400 font-light leading-relaxed max-w-lg">
                 We believe that true wellness lies in the balance between nature
-                and nurture. Our treatments are rooted in Balinese traditions,
+                and nurture. Our treatments are rooted in local traditions,
                 using locally sourced ingredients and ancient techniques to
                 restore your body's natural rhythm.
               </p>
@@ -197,7 +196,7 @@ export default function Home() {
                 Curated experiences designed to rejuvenate your senses.
               </p>
             </div>
-            <a href="#" className="group flex items-center gap-2 text-sm uppercase tracking-widest text-stone-400 hover:text-white transition-colors">
+            <a href="/services" className="group flex items-center gap-2 text-sm uppercase tracking-widest text-stone-400 hover:text-white transition-colors">
               View Full Menu
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </a>
@@ -215,17 +214,16 @@ export default function Home() {
                     Massage
                   </span>
                   <h3 className="font-serif-custom text-3xl text-stone-200 group-hover:text-white transition-colors">
-                    Balinese Flow
+                    Deep Tissue
                   </h3>
                   <p className="mt-4 text-stone-500 font-light leading-relaxed group-hover:text-stone-400 transition-colors text-sm">
-                    A seamless blend of acupressure, reflexology and aromatherapy
-                    to stimulate circulation and soothe tension.
+                    Relief for chronic muscle tension using slow pressure strokes.
                   </p>
                 </div>
                 <div className="flex items-center justify-between pt-6 border-t border-stone-800 group-hover:border-stone-700 transition-colors">
                   <span className="text-sm text-stone-400">90 Mins</span>
-                  <span className="text-lg font-serif-custom italic text-white">
-                    5
+                  <span className="text-lg font-serif-custom italic text-white flex items-baseline gap-1">
+                    <span className="text-xs font-sans not-italic text-stone-500">Ksh</span> 8,000
                   </span>
                 </div>
               </div>
@@ -242,17 +240,17 @@ export default function Home() {
                     Therapy
                   </span>
                   <h3 className="font-serif-custom text-3xl text-stone-200 group-hover:text-white transition-colors">
-                    Thermal Clay
+                    Body Scrub
                   </h3>
                   <p className="mt-4 text-stone-500 font-light leading-relaxed group-hover:text-stone-400 transition-colors text-sm">
-                    Detoxifying volcanic clay wrap followed by a warm herbal bath
-                    to draw out impurities and soften skin.
+                    Exfoliating treatment to remove dead skin cells and reveal
+                    smoother, glowing skin.
                   </p>
                 </div>
                 <div className="flex items-center justify-between pt-6 border-t border-stone-800 group-hover:border-stone-700 transition-colors">
-                  <span className="text-sm text-stone-400">120 Mins</span>
-                  <span className="text-lg font-serif-custom italic text-white">
-                    40
+                  <span className="text-sm text-stone-400">45 Mins</span>
+                  <span className="text-lg font-serif-custom italic text-white flex items-baseline gap-1">
+                    <span className="text-xs font-sans not-italic text-stone-500">Ksh</span> 3,500
                   </span>
                 </div>
               </div>
@@ -269,17 +267,17 @@ export default function Home() {
                     Facial
                   </span>
                   <h3 className="font-serif-custom text-3xl text-stone-200 group-hover:text-white transition-colors">
-                    Radiant Glow
+                    Glow Fusion
                   </h3>
                   <p className="mt-4 text-stone-500 font-light leading-relaxed group-hover:text-stone-400 transition-colors text-sm">
-                    Deep cleansing and hydration using organic aloe vera and
-                    cucumber essence to restore youthful vitality.
+                    Advanced facial for skin rejuvenation and radiance, reducing
+                    fine lines and improving texture.
                   </p>
                 </div>
                 <div className="flex items-center justify-between pt-6 border-t border-stone-800 group-hover:border-stone-700 transition-colors">
                   <span className="text-sm text-stone-400">60 Mins</span>
-                  <span className="text-lg font-serif-custom italic text-white">
-                    5
+                  <span className="text-lg font-serif-custom italic text-white flex items-baseline gap-1">
+                    <span className="text-xs font-sans not-italic text-stone-500">Ksh</span> 12,000
                   </span>
                 </div>
               </div>
@@ -312,18 +310,14 @@ export default function Home() {
                   -20% Off
                 </div>
                 <h3 className="text-2xl text-stone-200 font-serif-custom mb-3">
-                  Couples Retreat
+                  Vitapharm Special
                 </h3>
                 <p className="leading-relaxed group-hover:text-stone-300 transition-colors text-sm font-light text-stone-400 mb-8">
-                  A shared journey of relaxation including aromatherapy massage
-                  and private floral bath.
+                  Includes Glowfusion, back and leg massage, and a free product.
                 </p>
                 <div className="hidden flex items-center justify-between mt-auto border-t border-stone-900/50 pt-6">
-                  <span className="text-stone-300 font-serif-custom italic text-xl">
-                    40
-                    <span className="text-xs font-sans text-stone-600 line-through not-italic ml-2">
-                      00
-                    </span>
+                  <span className="text-stone-300 font-serif-custom italic text-xl flex items-baseline gap-1">
+                    <span className="text-xs font-sans not-italic text-stone-500">Ksh</span> 16,000
                   </span>
                   <button className="text-xs uppercase tracking-widest text-white border-b border-transparent hover:border-white transition-all pb-0.5">
                     Book Experience
@@ -339,18 +333,17 @@ export default function Home() {
               </div>
               <div className="flex flex-col h-full pt-8 pr-8 pb-8 pl-8 relative">
                 <div className="text-[0.65rem] uppercase z-10 font-bold text-white tracking-widest bg-[#4A5D4F] pt-1.5 pr-3 pb-1.5 pl-3 absolute top-6 right-6 shadow-lg">
-                  -20% Off
+                  Special
                 </div>
                 <h3 className="group-hover:text-white transition-colors text-2xl text-stone-200 font-serif-custom mb-3">
-                  Morning Awakening
+                  Pampering Facial
                 </h3>
                 <p className="leading-relaxed group-hover:text-stone-300 transition-colors text-sm font-light text-stone-400 mb-8">
-                  Start your day with vitality. A 60-minute energizing scrub
-                  followed by a fresh organic breakfast.
+                  Includes a full facial and relaxing back massage. Free product included.
                 </p>
                 <div className="hidden flex items-center justify-between mt-auto border-t border-stone-900/50 pt-6">
-                  <span className="text-stone-300 font-serif-custom italic text-xl">
-                    10
+                  <span className="text-stone-300 font-serif-custom italic text-xl flex items-baseline gap-1">
+                    <span className="text-xs font-sans not-italic text-stone-500">Ksh</span> 18,000
                   </span>
                   <button className="text-xs uppercase tracking-widest text-white border-b border-transparent hover:border-white transition-all pb-0.5">
                     Book Experience
@@ -374,11 +367,11 @@ export default function Home() {
               </h2>
               <div className="space-y-6 text-stone-400 font-light leading-relaxed">
                 <p>
-                  Asmara Wellness Spa was born from a desire to create a sanctuary
+                  Vitapharm Wellness Spa was born from a desire to create a sanctuary
                   where the noise of the modern world simply falls away.
                 </p>
                 <p>
-                  Our architecture embraces the raw beauty of Bali—using
+                  Our architecture embraces the raw beauty of Kilimani—using
                   sustainable bamboo, river stone, and reclaimed teak. Every
                   corner is designed to promote air flow and invite natural light.
                 </p>
@@ -440,7 +433,7 @@ export default function Home() {
                   <span className="italic text-stone-500"> serenity.</span>
                 </h2>
                 <p className="text-stone-400 font-light leading-relaxed max-w-md">
-                  We are located in the heart of Canggu. Please contact us to
+                  We are located in the heart of Kilimani. Please contact us to
                   reserve your treatment or for any assistance.
                 </p>
               </div>
@@ -455,11 +448,11 @@ export default function Home() {
                   <div className="pl-8 grid gap-2 text-stone-400 font-light">
                     <div className="flex justify-between max-w-xs border-b border-stone-800/50 pb-2 border-dashed">
                       <span>Mon – Fri</span>
-                      <span className="text-stone-300">09:00 – 21:00</span>
+                      <span className="text-stone-300">09:00 – 19:45</span>
                     </div>
                     <div className="flex justify-between max-w-xs pt-1">
                       <span>Sat – Sun</span>
-                      <span class="text-stone-300">10:00 – 20:00</span>
+                      <span className="text-stone-300">10:00 – 19:45</span>
                     </div>
                   </div>
                 </div>
@@ -474,14 +467,14 @@ export default function Home() {
                   </div>
                   <div className="pl-8 flex flex-col items-start gap-4">
                     <p className="text-stone-400 font-light">
-                      Jalan Pantai Batu Bolong, Canggu, Bali 80361
+                      Mezzanine Floor, Adlife Plaza, Kilimani, Nairobi
                     </p>
                     <div className="flex flex-wrap gap-4">
-                      <a href="https://wa.me/6281234567890" className="flex items-center gap-2 px-5 py-2.5 border border-stone-700 rounded-sm hover:bg-[#4A5D4F] hover:border-[#4A5D4F] hover:text-white transition-all duration-300 text-stone-300 text-sm tracking-wide group">
+                      <a href="https://wa.me/254718171253" className="flex items-center gap-2 px-5 py-2.5 border border-stone-700 rounded-sm hover:bg-[#4A5D4F] hover:border-[#4A5D4F] hover:text-white transition-all duration-300 text-stone-300 text-sm tracking-wide group">
                         <MessageCircle className="w-4 h-4 group-hover:scale-110 transition-transform" />
                         WhatsApp
                       </a>
-                      <a href="tel:+6281234567890" className="flex items-center gap-2 px-5 py-2.5 border border-stone-700 rounded-sm hover:bg-stone-800 hover:text-white transition-all duration-300 text-stone-300 text-sm tracking-wide group">
+                      <a href="tel:+254718171253" className="flex items-center gap-2 px-5 py-2.5 border border-stone-700 rounded-sm hover:bg-stone-800 hover:text-white transition-all duration-300 text-stone-300 text-sm tracking-wide group">
                         <Phone className="w-4 h-4 group-hover:scale-110 transition-transform" />
                         Call Us
                       </a>
@@ -505,7 +498,7 @@ export default function Home() {
 
             {/* Right: Map */}
             <div className="h-full min-h-[450px] w-full bg-stone-800 relative rounded-sm overflow-hidden border border-stone-800 group">
-              <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15775.66779471549!2d115.1228468!3d-8.6511479!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2dd2387e078c52d3%3A0x6b8d96277f7223e7!2sJalan%20Pantai%20Batu%20Bolong%2C%20Canggu%2C%20Bali!5e0!3m2!1sen!2sid!4v1629812345678" width="100%" height="100%" style={{ border: 0, filter: 'grayscale(1) contrast(1.2) brightness(0.7)' }} allowFullScreen loading="lazy" className="absolute inset-0 w-full h-full transition-all duration-700 group-hover:filter-none"></iframe>
+              <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3988.790696328731!2d36.78871261475395!3d-1.294711999055845!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x182f10a17382226b%3A0x1d2179836331496a!2sAdlife%20Plaza!5e0!3m2!1sen!2ske" width="100%" height="100%" style={{ border: 0, filter: 'grayscale(1) contrast(1.2) brightness(0.7)' }} allowFullScreen loading="lazy" className="absolute inset-0 w-full h-full transition-all duration-700 group-hover:filter-none"></iframe>
               <div className="absolute bottom-0 left-0 p-6 w-full bg-gradient-to-t from-stone-950 to-transparent pointer-events-none">
                 <div className="inline-flex items-center gap-2 bg-stone-900/90 backdrop-blur-md px-4 py-2 rounded-sm border border-stone-700/50 text-stone-300 text-xs tracking-wider">
                   <MapIcon className="w-3 h-3" />
@@ -521,13 +514,13 @@ export default function Home() {
             {/* Brand */}
             <div className="space-y-6">
               <div className="flex items-center gap-2">
-                <Lotus className="h-6 w-6 text-stone-400" strokeWidth={1.2} />
+                <Flower2 className="h-6 w-6 text-stone-400" strokeWidth={1.2} />
                 <span className="font-display text-lg tracking-tight text-stone-200">
-                  Asmara
+                  Vitapharm
                 </span>
               </div>
               <p className="text-stone-500 font-light text-sm leading-relaxed max-w-xs">
-                An oasis of tranquility in the heart of Canggu, dedicated to
+                An oasis of tranquility in the heart of Kilimani, dedicated to
                 holistic wellness and natural healing.
               </p>
             </div>
@@ -567,14 +560,14 @@ export default function Home() {
                 Visit Us
               </h4>
               <ul className="space-y-3 text-sm text-stone-500 font-light">
-                <li>Jalan Pantai Batu Bolong</li>
-                <li>Canggu, Bali 80361</li>
+                <li>Adlife Plaza, Mezzanine Floor</li>
+                <li>Kilimani, Nairobi</li>
                 <li className="pt-2">
-                  <a href="mailto:hello@asmaraspa.com" className="hover:text-white transition-colors">
-                    hello@asmaraspa.com
+                  <a href="mailto:vitapharmab@gmail.com" className="hover:text-white transition-colors">
+                    vitapharmab@gmail.com
                   </a>
                 </li>
-                <li>+62 812 3456 7890</li>
+                <li>+254 718 171 253</li>
               </ul>
             </div>
 
@@ -598,8 +591,8 @@ export default function Home() {
           </div>
 
           <div className="flex flex-col md:flex-row justify-between items-center gap-6 pt-8 border-t border-stone-900">
-            <p class="text-xs text-stone-600 font-light">
-              © 2024 Asmara Wellness. All rights reserved.
+            <p className="text-xs text-stone-600 font-light">
+              © 2024 Vitapharm Wellness. All rights reserved.
             </p>
             <div className="flex gap-6">
               <a href="#" className="text-stone-600 hover:text-stone-400 transition-colors">
@@ -616,7 +609,7 @@ export default function Home() {
         </footer>
       </div>
 
-      <a href="https://wa.me/6281234567890" target="_blank" className="fixed bottom-6 right-6 md:bottom-10 md:right-10 z-[60] flex items-center justify-center w-14 h-14 bg-[#4A5D4F] text-white rounded-full shadow-2xl hover:bg-[#3d4d41] hover:scale-105 transition-all duration-300 group border border-[#647a6a]" aria-label="Chat on WhatsApp">
+      <a href="https://wa.me/254718171253" target="_blank" className="fixed bottom-6 right-6 md:bottom-10 md:right-10 z-[60] flex items-center justify-center w-14 h-14 bg-[#4A5D4F] text-white rounded-full shadow-2xl hover:bg-[#3d4d41] hover:scale-105 transition-all duration-300 group border border-[#647a6a]" aria-label="Chat on WhatsApp">
         <MessageCircle className="w-7 h-7" />
         <div className="absolute right-full mr-4 bg-stone-900/90 backdrop-blur border border-stone-800 text-stone-200 text-[0.65rem] px-3 py-1.5 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap shadow-xl pointer-events-none uppercase tracking-widest font-medium">
           Chat with us
