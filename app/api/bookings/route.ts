@@ -55,11 +55,19 @@ export async function POST(req: Request) {
        [userId, service, appointmentDate]
     );
 
-    // 3. Send SMS
-    const message = `Hello ${name}, your booking for ${service} on ${date} at ${time} is confirmed! We look forward to seeing you. - Vitapharm`;
-    await sendSMS(formattedPhone, message);
+    // 3. Send SMS confirmation (booking still succeeds if SMS fails)
+    const smsMessage = `Hello ${name}, your booking for ${service} on ${date} at ${time} is confirmed! We look forward to seeing you. - Vitapharm`;
+    const smsResult = await sendSMS(formattedPhone, smsMessage);
 
-    return NextResponse.json({ success: true });
+    if (!smsResult.sent) {
+      console.warn('Booking confirmed but SMS not sent:', smsResult.reason);
+    }
+
+    return NextResponse.json({
+      success: true,
+      smsSent: smsResult.sent,
+      ...(smsResult.sent ? {} : { smsReason: smsResult.reason }),
+    });
 
   } catch (error: any) {
     console.error('Booking error:', error);

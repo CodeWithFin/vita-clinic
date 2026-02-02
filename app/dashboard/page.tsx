@@ -22,6 +22,8 @@ export default function Dashboard() {
 
       if (parsedUser.role === 'receptionist') {
         router.push('/reception');
+      } else if (parsedUser.role === 'doctor') {
+        router.push('/doctor');
       }
     }
   }, [router]);
