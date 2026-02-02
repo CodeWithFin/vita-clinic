@@ -15,6 +15,7 @@ export default function BookPage() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [dateError, setDateError] = useState('');
 
   const services = [
     "Timeless Facial", "Hydra Facial", "Royal Facial", "Chemical Peels", 
@@ -27,6 +28,47 @@ export default function BookPage() {
     "PRP Microneedling", "Armpits Waxing", "Bikini Waxing", "Body Waxing", 
     "Consultation"
   ];
+
+  // Spa hours: Mon–Fri 09:00–19:45, Sat 10:00–19:45. Closed Sundays. Last slot 19:00 so appointments end by close.
+  const getTimeSlots = () => {
+    const slots: { value: string; label: string }[] = [];
+    if (!formData.date) {
+      // No date: show weekday slots as default
+      for (let h = 9; h <= 19; h++) {
+        const value = `${String(h).padStart(2, '0')}:00`;
+        const label = h < 12 ? `${h}:00 AM` : h === 12 ? '12:00 PM' : `${h - 12}:00 PM`;
+        slots.push({ value, label });
+      }
+      return slots;
+    }
+    const d = new Date(formData.date + 'T12:00:00');
+    const day = d.getDay(); // 0 = Sun, 6 = Sat
+    if (day === 0) return slots; // Closed Sunday
+    const isSaturday = day === 6;
+    const startHour = isSaturday ? 10 : 9;
+    const endHour = 19;
+    for (let h = startHour; h <= endHour; h++) {
+      const value = `${String(h).padStart(2, '0')}:00`;
+      const label = h < 12 ? `${h}:00 AM` : h === 12 ? '12:00 PM' : `${h - 12}:00 PM`;
+      slots.push({ value, label });
+    }
+    return slots;
+  };
+
+  const handleDateChange = (value: string) => {
+    setDateError('');
+    if (!value) {
+      setFormData(prev => ({ ...prev, date: '', time: '' }));
+      return;
+    }
+    const d = new Date(value + 'T12:00:00');
+    if (d.getDay() === 0) {
+      setDateError('We\'re closed on Sundays. Please choose another day.');
+      setFormData(prev => ({ ...prev, date: '', time: '' }));
+      return;
+    }
+    setFormData(prev => ({ ...prev, date: value, time: '' }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,9 +209,11 @@ export default function BookPage() {
                                     className="w-full bg-stone-900 border border-stone-800 focus:border-[#4A5D4F] outline-none py-3 pl-10 pr-4 text-stone-300 text-sm rounded-sm [color-scheme:dark]"
                                     min={new Date().toISOString().split('T')[0]}
                                     value={formData.date}
-                                    onChange={e => setFormData({...formData, date: e.target.value})}
+                                    onChange={e => handleDateChange(e.target.value)}
                                 />
                             </div>
+                            <p className="text-xs text-stone-500">Closed Sundays.</p>
+                            {dateError && <p className="text-amber-400/90 text-xs">{dateError}</p>}
                         </div>
                         <div className="space-y-2">
                             <label className="text-xs uppercase tracking-wider text-stone-500">Preferred Time</label>
@@ -180,20 +224,14 @@ export default function BookPage() {
                                     className="w-full bg-stone-900 border border-stone-800 focus:border-[#4A5D4F] outline-none py-3 pl-10 pr-4 text-stone-300 text-sm rounded-sm appearance-none"
                                     value={formData.time}
                                     onChange={e => setFormData({...formData, time: e.target.value})}
+                                    disabled={getTimeSlots().length === 0}
                                 >
-                                    <option value="">Select Time</option>
-                                    <option value="09:00">09:00 AM</option>
-                                    <option value="10:00">10:00 AM</option>
-                                    <option value="11:00">11:00 AM</option>
-                                    <option value="12:00">12:00 PM</option>
-                                    <option value="13:00">01:00 PM</option>
-                                    <option value="14:00">02:00 PM</option>
-                                    <option value="15:00">03:00 PM</option>
-                                    <option value="16:00">04:00 PM</option>
-                                    <option value="17:00">05:00 PM</option>
-                                    <option value="18:00">06:00 PM</option>
-                                    <option value="19:00">07:00 PM</option>
-                                    <option value="20:00">08:00 PM</option>
+                                    <option value="">
+                                      {getTimeSlots().length === 0 ? 'Closed Sundays' : 'Select Time'}
+                                    </option>
+                                    {getTimeSlots().map(({ value, label }) => (
+                                      <option key={value} value={value}>{label}</option>
+                                    ))}
                                 </select>
                             </div>
                         </div>
