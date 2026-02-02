@@ -14,6 +14,8 @@ export default function BookPage() {
   });
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [smsSent, setSmsSent] = useState<boolean | null>(null);
+  const [smsReason, setSmsReason] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [dateError, setDateError] = useState('');
 
@@ -29,11 +31,19 @@ export default function BookPage() {
     "Consultation"
   ];
 
-  // Spa hours: Mon–Fri 09:00–19:45, Sat 10:00–19:45. Closed Sundays. Last slot 19:00 so appointments end by close.
+  // Spa hours: Mon–Fri 09:00–19:45, Sat 10:00–19:45. Closed Sundays. Last slot 19:00.
+  // For today: only show times that haven't passed (e.g. at 12:48, show from 13:00).
   const getTimeSlots = () => {
     const slots: { value: string; label: string }[] = [];
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const currentHour = today.getHours();
+    const currentMinutes = today.getMinutes();
+    // Next bookable slot: if past the hour, next full hour (e.g. 12:48 → 13:00)
+    const minHourToday = currentMinutes > 0 ? currentHour + 1 : currentHour;
+
     if (!formData.date) {
-      // No date: show weekday slots as default
+      // No date: show weekday slots as default (no "today" filter)
       for (let h = 9; h <= 19; h++) {
         const value = `${String(h).padStart(2, '0')}:00`;
         const label = h < 12 ? `${h}:00 AM` : h === 12 ? '12:00 PM' : `${h - 12}:00 PM`;
@@ -45,8 +55,12 @@ export default function BookPage() {
     const day = d.getDay(); // 0 = Sun, 6 = Sat
     if (day === 0) return slots; // Closed Sunday
     const isSaturday = day === 6;
-    const startHour = isSaturday ? 10 : 9;
+    let startHour = isSaturday ? 10 : 9;
     const endHour = 19;
+    // If booking today, don't show times that have already passed
+    if (formData.date === todayStr) {
+      startHour = Math.max(startHour, minHourToday);
+    }
     for (let h = startHour; h <= endHour; h++) {
       const value = `${String(h).padStart(2, '0')}:00`;
       const label = h < 12 ? `${h}:00 AM` : h === 12 ? '12:00 PM' : `${h - 12}:00 PM`;
@@ -86,6 +100,9 @@ export default function BookPage() {
         throw new Error('Booking failed. Please try again.');
       }
 
+      const data = await response.json().catch(() => ({}));
+      setSmsSent(data.smsSent === true);
+      setSmsReason(data.smsReason ?? null);
       setSubmitted(true);
     } catch (err) {
       setError('Something went wrong. Please try again or contact us directly.');
@@ -101,10 +118,28 @@ export default function BookPage() {
           <CheckCircle className="w-8 h-8 text-white" />
         </div>
         <h2 className="text-3xl font-serif-custom text-stone-100 mb-4">Booking Confirmed</h2>
-        <p className="text-stone-400 max-w-md mb-8">
-          Thank you, {formData.name}. Your appointment for {formData.service} has been confirmed. 
+        <p className="text-stone-400 max-w-md mb-4">
+          Thank you, {formData.name}. Your appointment for {formData.service} on {formData.date} at {formData.time} has been confirmed.
           We look forward to seeing you.
         </p>
+        {smsSent === true && (
+          <p className="text-stone-500 text-sm max-w-md mb-8">
+            A confirmation SMS has been sent to your phone.
+          </p>
+        )}
+        {smsSent === false && (
+          <div className="text-amber-200/90 text-sm max-w-md mb-8 space-y-1">
+            <p>We couldn&apos;t send an SMS reminder. Please save your booking details above.</p>
+            {smsReason && (
+              <p className="text-stone-500 text-xs font-mono max-w-md break-words">
+                {smsReason.includes('not configured') || smsReason.includes('TILIL')
+                  ? 'To enable SMS: add TILIL_API_KEY, TILIL_SHORTCODE, and SMS_ENDPOINT to your .env (see README).'
+                  : smsReason}
+              </p>
+            )}
+          </div>
+        )}
+        {smsSent === null && <div className="mb-8" />}
         <Link href="/" className="px-8 py-3 border border-stone-700 text-stone-300 hover:text-white hover:border-white transition-colors uppercase tracking-widest text-xs">
           Return Home
         </Link>
@@ -222,7 +257,7 @@ export default function BookPage() {
                                 <select 
                                     required
                                     className="w-full bg-stone-900 border border-stone-800 focus:border-[#4A5D4F] outline-none py-3 pl-10 pr-4 text-stone-300 text-sm rounded-sm appearance-none"
-                                    value={formData.time}
+                                    value={getTimeSlots().some(s => s.value === formData.time) ? formData.time : ''}
                                     onChange={e => setFormData({...formData, time: e.target.value})}
                                     disabled={getTimeSlots().length === 0}
                                 >
