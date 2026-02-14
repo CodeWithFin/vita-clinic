@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { getTotalDurationMinutes } from '@/lib/service-durations';
+import { getTotalDurationMinutes, getServiceDurationMinutes } from '@/lib/service-durations';
 
 export const dynamic = 'force-dynamic';
 
