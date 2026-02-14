@@ -8,7 +8,8 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const { status } = await request.json();
+    const body = await request.json().catch(() => ({}));
+    const { status, cancellation_reason } = body;
 
     if (!status) {
       return NextResponse.json(
@@ -25,9 +26,18 @@ export async function PATCH(
         );
     }
 
+    const updates: string[] = ['status = $1'];
+    const values: (string | null)[] = [status.toLowerCase()];
+    let idx = 2;
+    if (status.toLowerCase() === 'cancelled' && body.hasOwnProperty('cancellation_reason')) {
+      updates.push(`cancellation_reason = $${idx}`);
+      values.push(typeof cancellation_reason === 'string' ? cancellation_reason : null);
+      idx++;
+    }
+    values.push(id);
     const result = await db.query(
-      'UPDATE appointments SET status = $1 WHERE id = $2 RETURNING *',
-      [status.toLowerCase(), id]
+      `UPDATE appointments SET ${updates.join(', ')} WHERE id = $${idx} RETURNING *`,
+      values
     );
 
     if (result.rowCount === 0) {

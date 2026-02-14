@@ -4,6 +4,10 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Vitapharm Wellness Spa",
   description: "An invitation to slow down. Restore your body, quiet the mind, and reconnect within.",
+  icons: {
+    icon: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({
