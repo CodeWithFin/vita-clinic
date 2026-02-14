@@ -26,6 +26,16 @@ Booking confirmation SMS uses **Tilil**. Add these to your `.env`:
 
 If any are missing, bookings still succeed but no SMS is sent. The confirmation page will show whether an SMS was sent.
 
+## Client management (database migration)
+
+The app uses a separate **clients** table with full profiles (Client ID, DOB, gender, address, emergency contact, skin type, allergies, status, visit history, etc.). To create the table and backfill from existing users:
+
+```bash
+node scripts/run-clients-migration.js
+```
+
+Ensure `DATABASE_URL` is set in `.env`. The script applies `db/migrations/001_clients.sql` and backfills `client_id` on appointments, queue, and patient_records from existing user data. After this, reception can use **Clients** and **New Booking** (select or register client) and bookings/queue/records use the client entity.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

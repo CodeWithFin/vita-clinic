@@ -17,6 +17,7 @@ interface QueueItem {
     client_name: string;
     phone: string;
     user_id: number;
+    client_id?: number | null;
     created_at: string;
 }
 
@@ -120,13 +121,16 @@ export default function DoctorPage() {
       }
   };
 
-  const fetchRecords = async (userId: number) => {
+  const fetchRecords = async (patient: QueueItem) => {
       try {
           setRecordsLoading(true);
-          const res = await fetch(`/api/patients/${userId}/records`, { cache: 'no-store' });
+          const url = patient.client_id
+              ? `/api/clients/${patient.client_id}/records`
+              : `/api/patients/${patient.user_id}/records`;
+          const res = await fetch(url, { cache: 'no-store' });
           if (res.ok) {
               const data = await res.json();
-              setRecords(data);
+              setRecords(Array.isArray(data) ? data : []);
           }
       } catch (error) {
           console.error("Records fetch error", error);
@@ -178,7 +182,7 @@ export default function DoctorPage() {
 
   useEffect(() => {
     if (currentPatient) {
-        fetchRecords(currentPatient.user_id);
+        fetchRecords(currentPatient);
     } else {
         setRecords([]);
     }
@@ -226,7 +230,10 @@ export default function DoctorPage() {
               };
           }
 
-          const res = await fetch(`/api/patients/${currentPatient.user_id}/records`, {
+          const recordsUrl = currentPatient.client_id
+              ? `/api/clients/${currentPatient.client_id}/records`
+              : `/api/patients/${currentPatient.user_id}/records`;
+          const res = await fetch(recordsUrl, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(payload)
@@ -237,7 +244,7 @@ export default function DoctorPage() {
               setNewRecord('');
               setFormData({});
               setSaveStatus('saved');
-              fetchRecords(currentPatient.user_id);
+              fetchRecords(currentPatient);
               setTimeout(() => setSaveStatus('idle'), 2000);
           } else {
               setSaveStatus('error');
