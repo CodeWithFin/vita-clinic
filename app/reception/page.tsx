@@ -374,8 +374,14 @@ export default function ReceptionPage() {
               name: selectedBooking.client_name,
               phone: selectedBooking.phone ?? '',
               service: '',
+              services: [],
               date: '',
-              time: ''
+              time: '',
+              provider_id: '',
+              appointment_type: 'treatment',
+              notes: '',
+              recurrence_rule: '',
+              recurrence_end_date: '',
           });
           setBookingStep('service');
       }
