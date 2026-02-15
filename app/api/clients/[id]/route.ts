@@ -90,6 +90,7 @@ export async function PATCH(
       contraindications,
       status,
       preferences,
+      sms_opt_in,
     } = body;
 
     const normalizedPhone = phone !== undefined ? (phone ? formatPhoneNumber(String(phone)) : null) : undefined;
@@ -146,6 +147,7 @@ export async function PATCH(
     if (contraindications !== undefined) set('contraindications', contraindications || null);
     if (status !== undefined && ['active', 'inactive', 'VIP', 'archived'].includes(status)) set('status', status);
     if (preferences !== undefined) set('preferences', typeof preferences === 'object' ? JSON.stringify(preferences) : null);
+    if (sms_opt_in !== undefined) set('sms_opt_in', Boolean(sms_opt_in));
 
     if (updates.length === 0) {
       const r = await db.query('SELECT * FROM clients WHERE id = $1', [clientId]);

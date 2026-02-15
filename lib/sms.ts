@@ -1,3 +1,4 @@
+import { db } from '@/lib/db';
 
 export function formatPhoneNumber(phone: string) {
   // Remove all non-numeric characters first (including +)
@@ -64,5 +65,56 @@ export async function sendSMS(phone: string, message: string): Promise<SendSMSRe
   } catch (error) {
     console.error('Failed to send SMS:', error);
     return { sent: false, reason: error instanceof Error ? error.message : 'Network or server error' };
+  }
+}
+
+const DEFAULT_RETRIES = 2;
+
+/** Send SMS with retries on failure (e.g. transient network/API errors). */
+export async function sendSMSWithRetry(
+  phone: string,
+  message: string,
+  options?: { maxRetries?: number }
+): Promise<SendSMSResult> {
+  const maxRetries = Math.max(0, options?.maxRetries ?? DEFAULT_RETRIES);
+  let last: SendSMSResult = { sent: false, reason: 'Unknown' };
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    last = await sendSMS(phone, message);
+    if (last.sent) return last;
+    if (attempt < maxRetries) {
+      await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+    }
+  }
+  return last;
+}
+
+export type SMSLogParams = {
+  client_id?: number | null;
+  user_id?: number | null;
+  phone: string;
+  message: string;
+  template_slug?: string | null;
+  appointment_id?: number | null;
+  reminder_hours_before?: number | null;
+  created_by?: number | null;
+  result: SendSMSResult;
+};
+
+/** Persist SMS to sms_logs for history and delivery status. Call after sendSMS/sendSMSWithRetry. */
+export async function logSMSResult(params: SMSLogParams): Promise<void> {
+  const { client_id, user_id, phone, message, template_slug, appointment_id, reminder_hours_before, created_by, result } = params;
+  const status = result.sent ? 'sent' : 'failed';
+  const failure_reason = result.sent ? null : result.reason;
+  const external_id = result.sent && result.data && typeof (result.data as { id?: string }).id === 'string'
+    ? (result.data as { id: string }).id
+    : null;
+  try {
+    await db.query(
+      `INSERT INTO sms_logs (client_id, user_id, phone, message, template_slug, appointment_id, reminder_hours_before, direction, status, failure_reason, external_id, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'outbound', $8, $9, $10, $11)`,
+      [client_id ?? null, user_id ?? null, phone, message, template_slug ?? null, appointment_id ?? null, reminder_hours_before ?? null, status, failure_reason, external_id, created_by ?? null]
+    );
+  } catch (e) {
+    console.error('Failed to log SMS:', e);
   }
 }

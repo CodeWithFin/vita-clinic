@@ -15,6 +15,9 @@ import {
   Save,
   X,
   AlertCircle,
+  MessageSquare,
+  CheckCircle,
+  XCircle,
 } from 'lucide-react';
 
 interface Client {
@@ -34,10 +37,21 @@ interface Client {
   allergies: string | null;
   contraindications: string | null;
   status: string;
+  sms_opt_in?: boolean;
   total_spent: string | number;
   visit_count: number;
   visit_history: Array<{ id: number; service_type: string; appointment_date: string; status: string }>;
   service_history: Array<{ date: string; service: string; status: string; appointment_id: number }>;
+}
+
+interface SmsLogEntry {
+  id: number;
+  phone: string;
+  message: string;
+  template_slug: string | null;
+  status: string;
+  failure_reason: string | null;
+  sent_at: string;
 }
 
 const STATUS_OPTIONS = ['active', 'inactive', 'VIP', 'archived'];
@@ -53,6 +67,11 @@ export default function ClientDetailPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState<Partial<Client>>({});
+  const [smsHistory, setSmsHistory] = useState<SmsLogEntry[]>([]);
+  const [showSmsModal, setShowSmsModal] = useState(false);
+  const [smsMessage, setSmsMessage] = useState('');
+  const [smsSending, setSmsSending] = useState(false);
+  const [smsResult, setSmsResult] = useState<{ sent: boolean; reason?: string } | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -85,11 +104,20 @@ export default function ClientDetailPage() {
           allergies: data.allergies,
           contraindications: data.contraindications,
           status: data.status,
+          sms_opt_in: data.sms_opt_in !== false,
         } : {});
       })
       .catch(() => setClient(null))
       .finally(() => setLoading(false));
   }, [id, user]);
+
+  useEffect(() => {
+    if (!id) return;
+    fetch(`/api/clients/${id}/sms`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((list) => setSmsHistory(Array.isArray(list) ? list : []))
+      .catch(() => setSmsHistory([]));
+  }, [id]);
 
   const handleSave = async () => {
     if (!id) return;
@@ -123,6 +151,7 @@ export default function ClientDetailPage() {
         allergies: data.allergies,
         contraindications: data.contraindications,
         status: data.status,
+        sms_opt_in: data.sms_opt_in !== false,
       });
       setEditing(false);
     } catch {
@@ -209,6 +238,10 @@ export default function ClientDetailPage() {
                   <div><label className="text-xs text-stone-500">Emergency contact</label><input type="text" className="w-full mt-1 bg-stone-950 border border-stone-800 px-3 py-2 text-stone-200 rounded-sm" value={form.emergency_contact_name ?? ''} onChange={(e) => setForm((f) => ({ ...f, emergency_contact_name: e.target.value }))} placeholder="Name" /></div>
                   <div><input type="tel" className="w-full mt-1 bg-stone-950 border border-stone-800 px-3 py-2 text-stone-200 rounded-sm" value={form.emergency_contact_phone ?? ''} onChange={(e) => setForm((f) => ({ ...f, emergency_contact_phone: e.target.value }))} placeholder="Phone" /></div>
                   <div><label className="text-xs text-stone-500">Status</label><select className="w-full mt-1 bg-stone-950 border border-stone-800 px-3 py-2 text-stone-200 rounded-sm" value={form.status ?? 'active'} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>{STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}</select></div>
+                  <div className="flex items-center gap-2 pt-2">
+                    <input type="checkbox" id="sms_opt_in" checked={form.sms_opt_in !== false} onChange={(e) => setForm((f) => ({ ...f, sms_opt_in: e.target.checked }))} className="rounded border-stone-600 bg-stone-950 text-[#4A5D4F]" />
+                    <label htmlFor="sms_opt_in" className="text-xs text-stone-500">SMS opt-in (receive reminders & messages)</label>
+                  </div>
                 </div>
               ) : (
                 <dl className="space-y-3 text-sm">
@@ -226,6 +259,10 @@ export default function ClientDetailPage() {
                   )}
                   {client.emergency_contact_name && <div className="text-stone-400">{client.emergency_contact_name}</div>}
                   {client.emergency_contact_phone && <div className="text-stone-400">{client.emergency_contact_phone}</div>}
+                  <div className="flex items-center gap-2 text-stone-400 pt-1">
+                    {client.sms_opt_in === false ? <XCircle className="w-4 h-4 text-amber-500" /> : <CheckCircle className="w-4 h-4 text-green-500/80" />}
+                    <span>SMS: {client.sms_opt_in === false ? 'Opted out' : 'Opted in'}</span>
+                  </div>
                   {!client.phone && !client.email && !client.address && !client.date_of_birth && !client.emergency_contact_name && <p className="text-stone-600">No contact details yet.</p>}
                 </dl>
               )}
@@ -287,6 +324,43 @@ export default function ClientDetailPage() {
                 <p className="text-stone-600 text-sm">No services recorded yet.</p>
               )}
             </section>
+
+            <section className="bg-stone-900/50 border border-stone-800 rounded-sm p-6">
+              <h2 className="text-sm uppercase tracking-wider text-stone-500 mb-4 flex items-center gap-2">
+                <MessageSquare className="w-4 h-4" /> SMS
+              </h2>
+              {client.phone ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => { setShowSmsModal(true); setSmsMessage(''); setSmsResult(null); }}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-stone-800 text-stone-200 hover:bg-stone-700 rounded-sm text-sm font-medium mb-4"
+                  >
+                    <MessageSquare className="w-4 h-4" /> Send SMS
+                  </button>
+                  <h3 className="text-xs uppercase text-stone-500 mb-2">SMS history</h3>
+                  {smsHistory.length === 0 ? (
+                    <p className="text-stone-600 text-sm">No SMS sent yet.</p>
+                  ) : (
+                    <ul className="space-y-2 max-h-40 overflow-y-auto">
+                      {smsHistory.map((entry) => (
+                        <li key={entry.id} className="bg-stone-950 border border-stone-800 p-2 rounded-sm text-sm">
+                          <div className="flex justify-between items-start gap-2">
+                            <span className={`text-[10px] uppercase ${entry.status === 'sent' ? 'text-green-500' : 'text-red-400'}`}>{entry.status}</span>
+                            <span className="text-stone-500 text-xs">{new Date(entry.sent_at).toLocaleString()}</span>
+                          </div>
+                          <p className="text-stone-300 text-xs mt-1 line-clamp-2">{entry.message}</p>
+                          {entry.failure_reason && <p className="text-red-400/80 text-xs mt-1">{entry.failure_reason}</p>}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              ) : (
+                <p className="text-stone-600 text-sm">Add a phone number to send SMS.</p>
+              )}
+            </section>
+
             {user.role === 'receptionist' && (
               <Link
                 href={`/reception?book=${client.id}`}
@@ -297,6 +371,67 @@ export default function ClientDetailPage() {
             )}
           </div>
         </div>
+
+        {/* Send SMS modal */}
+        {showSmsModal && id && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div className="bg-stone-900 border border-stone-800 rounded-sm w-full max-w-md p-6 space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="font-medium text-white">Send SMS</h3>
+                <button type="button" onClick={() => { setShowSmsModal(false); setSmsResult(null); }} className="text-stone-500 hover:text-white">
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-stone-400 text-sm">To: {client.name} {client.phone && <span className="text-stone-500">({client.phone})</span>}</p>
+              <textarea
+                className="w-full bg-stone-950 border border-stone-800 p-3 text-stone-200 text-sm rounded-sm min-h-[100px]"
+                placeholder="Type your message..."
+                value={smsMessage}
+                onChange={(e) => setSmsMessage(e.target.value)}
+                maxLength={500}
+              />
+              {smsResult && (
+                <p className={`text-sm ${smsResult.sent ? 'text-green-400' : 'text-red-400'}`}>
+                  {smsResult.sent ? 'SMS sent.' : (smsResult.reason || 'Failed to send.')}
+                </p>
+              )}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  disabled={!smsMessage.trim() || smsSending}
+                  onClick={async () => {
+                    setSmsSending(true);
+                    setSmsResult(null);
+                    try {
+                      const res = await fetch('/api/sms/send', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ client_id: client.id, message: smsMessage.trim() }),
+                      });
+                      const data = await res.json().catch(() => ({}));
+                      setSmsResult({ sent: data.sent === true, reason: data.reason });
+                      if (data.sent) {
+                        setSmsMessage('');
+                        const listRes = await fetch(`/api/clients/${id}/sms`);
+                        const list = listRes.ok ? await listRes.json() : [];
+                        setSmsHistory(Array.isArray(list) ? list : []);
+                      }
+                    } catch {
+                      setSmsResult({ sent: false, reason: 'Network error' });
+                    }
+                    setSmsSending(false);
+                  }}
+                  className="flex-1 px-4 py-2 bg-[#4A5D4F] text-white rounded-sm hover:bg-[#3d4d41] disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                >
+                  {smsSending ? 'Sending...' : 'Send'}
+                </button>
+                <button type="button" onClick={() => { setShowSmsModal(false); setSmsResult(null); }} className="px-4 py-2 border border-stone-700 text-stone-300 rounded-sm hover:bg-stone-800 text-sm">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

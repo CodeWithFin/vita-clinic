@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { sendSMS } from '@/lib/sms';
+import { sendSMSWithRetry, logSMSResult } from '@/lib/sms';
 
 export async function PATCH(
   request: Request,
@@ -48,16 +48,61 @@ export async function PATCH(
     }
 
     const updatedBooking = result.rows[0];
+    const newStatus = (updatedBooking.status || '').toLowerCase();
 
-    // SMS notification removed as per request
-    /*
-    try {
-        const userRes = await db.query('SELECT name, phone FROM users WHERE id = $1', [updatedBooking.user_id]);
-        // ... SMS logic removed ...
-    } catch (smsError) {
-        console.error("Failed to send status update SMS", smsError);
+    // Send status-update SMS when status is confirmed or cancelled (with retry and log)
+    if (newStatus === 'confirmed' || newStatus === 'cancelled') {
+      try {
+        let phone: string | null = null;
+        let name: string | null = null;
+        let clientId: number | null = null;
+        let userId: number | null = null;
+        if (updatedBooking.client_id) {
+          const clientRes = await db.query('SELECT name, phone, sms_opt_in FROM clients WHERE id = $1', [updatedBooking.client_id]);
+          if (clientRes.rows[0] && clientRes.rows[0].sms_opt_in !== false) {
+            name = clientRes.rows[0].name;
+            phone = clientRes.rows[0].phone;
+            clientId = updatedBooking.client_id;
+          }
+        }
+        if ((!phone || !name) && updatedBooking.user_id) {
+          const userRes = await db.query('SELECT name, phone FROM users WHERE id = $1', [updatedBooking.user_id]);
+          if (userRes.rows[0]) {
+            name = name || userRes.rows[0].name;
+            phone = phone || userRes.rows[0].phone;
+            userId = updatedBooking.user_id;
+          }
+        }
+        if (phone && name) {
+          const serviceLabel = updatedBooking.service_type || 'your appointment';
+          const dateStr = updatedBooking.appointment_date
+            ? new Date(updatedBooking.appointment_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+            : '';
+          const timeStr = updatedBooking.appointment_date
+            ? new Date(updatedBooking.appointment_date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+            : '';
+          const smsMessage =
+            newStatus === 'cancelled'
+              ? `Hi ${name}, your appointment (${serviceLabel}) has been cancelled.${updatedBooking.cancellation_reason ? ` Reason: ${updatedBooking.cancellation_reason}` : ''} - Vitapharm`
+              : `Hi ${name}, your appointment for ${serviceLabel} on ${dateStr} at ${timeStr} is confirmed. - Vitapharm`;
+          const smsResult = await sendSMSWithRetry(phone, smsMessage);
+          await logSMSResult({
+            client_id: clientId,
+            user_id: userId,
+            phone,
+            message: smsMessage,
+            template_slug: newStatus === 'cancelled' ? 'appointment_cancelled' : 'appointment_confirmation',
+            appointment_id: updatedBooking.id,
+            result: smsResult,
+          });
+          if (!smsResult.sent) {
+            console.warn('Status update SMS not sent:', smsResult.reason);
+          }
+        }
+      } catch (smsError) {
+        console.error('Failed to send status update SMS', smsError);
+      }
     }
-    */
 
     return NextResponse.json(updatedBooking);
   } catch (error) {

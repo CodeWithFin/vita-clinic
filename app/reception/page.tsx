@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Calendar as CalendarIcon, Clock, User, Phone, CheckCircle, XCircle, Search, RefreshCcw, Plus, Users, List, LayoutGrid } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, User, Phone, CheckCircle, XCircle, Search, RefreshCcw, Plus, Users, List, LayoutGrid, MessageSquare } from 'lucide-react';
 import { getTotalDurationMinutes } from '@/lib/service-durations';
 
 interface Booking {
@@ -94,6 +94,10 @@ export default function ReceptionPage() {
   const [pendingCancelBooking, setPendingCancelBooking] = useState<Booking | null>(null);
   const [showWaitingListModal, setShowWaitingListModal] = useState(false);
   const [waitingListPreferredDate, setWaitingListPreferredDate] = useState('');
+  const [showSmsModal, setShowSmsModal] = useState(false);
+  const [smsMessage, setSmsMessage] = useState('');
+  const [smsSending, setSmsSending] = useState(false);
+  const [smsResult, setSmsResult] = useState<{ sent: boolean; reason?: string } | null>(null);
 
   const services = [
     "Timeless Facial", "Hydra Facial", "Royal Facial", "Chemical Peels", 
@@ -1099,6 +1103,20 @@ export default function ReceptionPage() {
                                     </div>
                                 </div>
 
+                                {(selectedBooking.client_id != null || selectedBooking.phone) && (
+                                  <div className="space-y-3">
+                                    <p className="text-xs uppercase text-stone-500 tracking-wider">SMS</p>
+                                    <button
+                                      type="button"
+                                      onClick={() => { setShowSmsModal(true); setSmsMessage(''); setSmsResult(null); }}
+                                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-stone-800 text-stone-200 hover:bg-stone-700 rounded-sm text-xs font-medium uppercase tracking-wide transition-colors"
+                                    >
+                                      <MessageSquare className="w-4 h-4" />
+                                      Send SMS
+                                    </button>
+                                  </div>
+                                )}
+
                                 <div className="pt-4 border-t border-stone-800">
                                     <button 
                                         onClick={handleBookNextVisit}
@@ -1152,6 +1170,65 @@ export default function ReceptionPage() {
                     </div>
                 </div>
             </div>
+        )}
+
+        {/* Modal: Send SMS */}
+        {showSmsModal && selectedBooking && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div className="bg-stone-900 border border-stone-800 rounded-sm w-full max-w-md p-6 space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="font-medium text-white">Send SMS</h3>
+                <button type="button" onClick={() => { setShowSmsModal(false); setSmsResult(null); }} className="text-stone-500 hover:text-white">
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-stone-400 text-sm">To: {selectedBooking.client_name} {selectedBooking.phone && <span className="text-stone-500">({selectedBooking.phone})</span>}</p>
+              <textarea
+                className="w-full bg-stone-950 border border-stone-800 p-3 text-stone-200 text-sm rounded-sm min-h-[100px]"
+                placeholder="Type your message..."
+                value={smsMessage}
+                onChange={(e) => setSmsMessage(e.target.value)}
+                maxLength={500}
+              />
+              {smsResult && (
+                <p className={`text-sm ${smsResult.sent ? 'text-green-400' : 'text-red-400'}`}>
+                  {smsResult.sent ? 'SMS sent.' : (smsResult.reason || 'Failed to send.')}
+                </p>
+              )}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  disabled={!smsMessage.trim() || smsSending}
+                  onClick={async () => {
+                    setSmsSending(true);
+                    setSmsResult(null);
+                    try {
+                      const body: { message: string; client_id?: number; phone?: string } = { message: smsMessage.trim() };
+                      if (selectedBooking.client_id != null) body.client_id = selectedBooking.client_id;
+                      else if (selectedBooking.phone) body.phone = selectedBooking.phone;
+                      const res = await fetch('/api/sms/send', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body),
+                      });
+                      const data = await res.json().catch(() => ({}));
+                      setSmsResult({ sent: data.sent === true, reason: data.reason });
+                      if (data.sent) setSmsMessage('');
+                    } catch {
+                      setSmsResult({ sent: false, reason: 'Network error' });
+                    }
+                    setSmsSending(false);
+                  }}
+                  className="flex-1 px-4 py-2 bg-[#4A5D4F] text-white rounded-sm hover:bg-[#3d4d41] disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                >
+                  {smsSending ? 'Sending...' : 'Send'}
+                </button>
+                <button type="button" onClick={() => { setShowSmsModal(false); setSmsResult(null); }} className="px-4 py-2 border border-stone-700 text-stone-300 rounded-sm hover:bg-stone-800 text-sm">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
       </div>

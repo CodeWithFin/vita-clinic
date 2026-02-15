@@ -16,15 +16,31 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## SMS (booking confirmation)
+## SMS (booking confirmation & reminders)
 
-Booking confirmation SMS uses **Tilil**. Add these to your `.env`:
+Booking confirmation and status-update SMS use **Tilil**. Add these to your `.env`:
 
 - `TILIL_API_KEY` – from your Tilil dashboard  
 - `TILIL_SHORTCODE` – your Tilil shortcode  
 - `SMS_ENDPOINT` – Tilil SMS API URL (e.g. `https://api.tilil.com/v1/sms/send`)
 
-If any are missing, bookings still succeed but no SMS is sent. The confirmation page will show whether an SMS was sent.
+Optional:
+
+- `TILIL_BALANCE_ENDPOINT` – for SMS credit balance in the app (if your provider supports it)  
+- `CRON_SECRET` – secret for securing the reminders cron (e.g. `Authorization: Bearer <CRON_SECRET>`)
+
+If the main three are missing, bookings still succeed but no SMS is sent. The confirmation page will show whether an SMS was sent.
+
+**SMS module (after running migration 003):**
+
+- **Status-update SMS**: When reception changes a booking to *confirmed* or *cancelled*, an SMS is sent to the client (respects opt-out). Uses retry on failure and is logged in SMS history.
+- **Scheduled reminders**: 1 day and 2 hours before appointment (configurable in `sms_reminder_settings`). Call `GET /api/cron/reminders` on a schedule (e.g. every 15 min via Vercel Cron; see `vercel.json`).
+- **Manual Send SMS**: Reception (Manage booking → Send SMS) and client detail page (Send SMS button).
+- **SMS history**: Per client under the client’s SMS section; delivery status (sent/failed) and failure reason when applicable.
+- **Opt-in/opt-out**: Client profile has an “SMS opt-in” toggle (PATCH `sms_opt_in`); manual and bulk SMS respect it.
+- **Configurable templates**: `GET /api/sms/templates`, `PATCH /api/sms/templates/[id]` for body/description.
+- **Bulk SMS**: `POST /api/sms/bulk` with `client_ids` and `message` (only to opted-in clients with phone).
+- **Credit balance**: `GET /api/sms/balance` (when `TILIL_BALANCE_ENDPOINT` is set).
 
 ## Client management (database migration)
 
@@ -35,6 +51,8 @@ node scripts/run-clients-migration.js
 ```
 
 Ensure `DATABASE_URL` is set in `.env`. The script applies `db/migrations/001_clients.sql` and backfills `client_id` on appointments, queue, and patient_records from existing user data. After this, reception can use **Clients** and **New Booking** (select or register client) and bookings/queue/records use the client entity.
+
+For the **SMS module** (templates, logs, opt-in, reminders), apply the SMS migration as well (e.g. run `db/migrations/003_sms_system.sql` against your database). It adds `clients.sms_opt_in`, `sms_templates`, `sms_logs`, and `sms_reminder_settings`.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
