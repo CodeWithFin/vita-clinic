@@ -27,10 +27,18 @@ export async function POST(req: Request) {
       if (!Number.isInteger(cid)) {
         return NextResponse.json({ error: 'Invalid client_id' }, { status: 400 });
       }
-      const client = await db.query(
-        'SELECT id, phone, sms_opt_in FROM clients WHERE id = $1',
-        [cid]
-      );
+      let client: { rows: { id: number; phone: string | null; sms_opt_in?: boolean }[] };
+      try {
+        client = await db.query(
+          'SELECT id, phone, sms_opt_in FROM clients WHERE id = $1',
+          [cid]
+        );
+      } catch (e) {
+        const msg = (e as Error)?.message ?? String(e);
+        if (msg.includes('sms_opt_in') || msg.includes('column') || msg.includes('does not exist')) {
+          client = await db.query('SELECT id, phone FROM clients WHERE id = $1', [cid]);
+        } else throw e;
+      }
       if (client.rows.length === 0) {
         return NextResponse.json({ error: 'Client not found' }, { status: 404 });
       }

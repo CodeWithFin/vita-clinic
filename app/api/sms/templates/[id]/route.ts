@@ -61,6 +61,13 @@ export async function PATCH(
     );
     return NextResponse.json(result.rows[0]);
   } catch (err) {
+    const msg = (err as Error)?.message ?? String(err);
+    if (msg.includes('sms_templates') || msg.includes('relation') || msg.includes('does not exist')) {
+      return NextResponse.json(
+        { error: 'SMS templates not found. Run node scripts/run-sms-migrations.js' },
+        { status: 503 }
+      );
+    }
     console.error('SMS template update error:', err);
     return NextResponse.json(
       { error: 'Internal Server Error' },

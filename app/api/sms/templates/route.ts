@@ -13,7 +13,8 @@ export async function GET() {
     );
     return NextResponse.json(result.rows);
   } catch (err) {
-    if (String(err).includes('sms_templates') || String(err).includes('relation')) {
+    const msg = (err as Error)?.message ?? String(err);
+    if (msg.includes('sms_templates') || msg.includes('relation') || msg.includes('does not exist')) {
       return NextResponse.json([], { status: 200 });
     }
     console.error('SMS templates list error:', err);

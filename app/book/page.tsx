@@ -96,11 +96,15 @@ export default function BookPage() {
         body: JSON.stringify(formData)
       });
 
+      const data = await response.json().catch(() => ({}));
+
       if (!response.ok) {
-        throw new Error('Booking failed. Please try again.');
+        const msg = data?.error || 'Booking failed. Please try again.';
+        const details = data?.details;
+        setError(details ? `${msg} (${details})` : msg);
+        return;
       }
 
-      const data = await response.json().catch(() => ({}));
       setSmsSent(data.smsSent === true);
       setSmsReason(data.smsReason ?? null);
       setSubmitted(true);

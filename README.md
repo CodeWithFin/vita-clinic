@@ -52,7 +52,13 @@ node scripts/run-clients-migration.js
 
 Ensure `DATABASE_URL` is set in `.env`. The script applies `db/migrations/001_clients.sql` and backfills `client_id` on appointments, queue, and patient_records from existing user data. After this, reception can use **Clients** and **New Booking** (select or register client) and bookings/queue/records use the client entity.
 
-For the **SMS module** (templates, logs, opt-in, reminders), apply the SMS migration as well (e.g. run `db/migrations/003_sms_system.sql` against your database). It adds `clients.sms_opt_in`, `sms_templates`, `sms_logs`, and `sms_reminder_settings`.
+For the **SMS module** (templates, logs, opt-in, reminders), run:
+
+```bash
+node scripts/run-sms-migrations.js
+```
+
+This applies `db/migrations/003_sms_system.sql` and `004_sms_same_day_and_templates.sql` (adds `clients.sms_opt_in`, `sms_templates`, `sms_logs`, `sms_reminder_settings`, same-day reminder, and follow-up/promotional/birthday templates). **Admins**: go to Dashboard → **SMS Settings** to manage templates, reminder timing (1 day / same day / 2 hours), credit balance, delivery report, and bulk SMS.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

@@ -2,7 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { MessageSquare } from 'lucide-react';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -45,6 +47,17 @@ export default function Dashboard() {
           <h1 className="font-display text-3xl text-amber-50">Welcome, {user.name}</h1>
           <Button variant="outline" onClick={handleLogout} size="sm">Log Out</Button>
         </div>
+
+        {user.role === 'admin' && (
+          <div className="flex gap-3">
+            <Link
+              href="/admin/sms"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#2C2926] border border-stone-800/50 rounded-sm text-amber-200 hover:bg-stone-800/50 transition-colors"
+            >
+              <MessageSquare className="w-4 h-4" /> SMS Settings
+            </Link>
+          </div>
+        )}
         
         <div className="grid md:grid-cols-2 gap-6">
           <div className="bg-[#2C2926] p-6 rounded-sm border border-stone-800/50">

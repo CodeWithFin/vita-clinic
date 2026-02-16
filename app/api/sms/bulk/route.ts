@@ -26,10 +26,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'client_ids array is required and must not be empty' }, { status: 400 });
     }
 
-    const clients = await db.query(
-      `SELECT id, name, phone FROM clients WHERE id = ANY($1::int[]) AND sms_opt_in = true AND phone IS NOT NULL AND TRIM(phone) != ''`,
-      [ids]
-    );
+    let clients: { rows: { id: number; name: string; phone: string }[] };
+    try {
+      clients = await db.query(
+        `SELECT id, name, phone FROM clients WHERE id = ANY($1::int[]) AND (sms_opt_in IS NULL OR sms_opt_in = true) AND phone IS NOT NULL AND TRIM(phone) != ''`,
+        [ids]
+      );
+    } catch (e) {
+      const msg = (e as Error)?.message ?? String(e);
+      if (msg.includes('sms_opt_in') || msg.includes('column') || msg.includes('does not exist')) {
+        clients = await db.query(
+          `SELECT id, name, phone FROM clients WHERE id = ANY($1::int[]) AND phone IS NOT NULL AND TRIM(phone) != ''`,
+          [ids]
+        );
+      } else throw e;
+    }
 
     const results: { client_id: number; sent: boolean; reason?: string }[] = [];
     const createdBy = created_by != null ? Number(created_by) : null;

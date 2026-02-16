@@ -33,7 +33,8 @@ export async function GET(
 
     return NextResponse.json(result.rows);
   } catch (err) {
-    if (String(err).includes('sms_logs') || String(err).includes('relation')) {
+    const msg = (err as Error)?.message ?? String(err);
+    if (msg.includes('sms_logs') || msg.includes('relation') || msg.includes('does not exist')) {
       return NextResponse.json([]);
     }
     console.error('Client SMS history error:', err);

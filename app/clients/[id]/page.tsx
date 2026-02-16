@@ -72,6 +72,7 @@ export default function ClientDetailPage() {
   const [smsMessage, setSmsMessage] = useState('');
   const [smsSending, setSmsSending] = useState(false);
   const [smsResult, setSmsResult] = useState<{ sent: boolean; reason?: string } | null>(null);
+  const [smsTemplates, setSmsTemplates] = useState<{ id: number; name: string; slug: string; body: string }[]>([]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -333,7 +334,15 @@ export default function ClientDetailPage() {
                 <>
                   <button
                     type="button"
-                    onClick={() => { setShowSmsModal(true); setSmsMessage(''); setSmsResult(null); }}
+                    onClick={async () => {
+                      setShowSmsModal(true);
+                      setSmsMessage('');
+                      setSmsResult(null);
+                      try {
+                        const r = await fetch('/api/sms/templates');
+                        if (r.ok) setSmsTemplates(await r.json());
+                      } catch { /* ignore */ }
+                    }}
                     className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-stone-800 text-stone-200 hover:bg-stone-700 rounded-sm text-sm font-medium mb-4"
                   >
                     <MessageSquare className="w-4 h-4" /> Send SMS
@@ -383,6 +392,28 @@ export default function ClientDetailPage() {
                 </button>
               </div>
               <p className="text-stone-400 text-sm">To: {client.name} {client.phone && <span className="text-stone-500">({client.phone})</span>}</p>
+              {smsTemplates.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <label className="text-stone-500 text-xs shrink-0">Use template:</label>
+                  <select
+                    className="bg-stone-950 border border-stone-800 px-3 py-2 text-stone-200 text-sm rounded-sm flex-1"
+                    value=""
+                    onChange={(e) => {
+                      const t = smsTemplates.find((x) => String(x.id) === e.target.value);
+                      if (!t) return;
+                      const name = client.name || 'there';
+                      let body = t.body.replace(/\{\{name\}\}/g, name).replace(/\{\{service\}\}/g, 'your appointment').replace(/\{\{date\}\}/g, '').replace(/\{\{time\}\}/g, '').replace(/\{\{reason\}\}/g, '').replace(/\{\{message\}\}/g, '').replace(/\{\{care_instructions\}\}/g, '');
+                      setSmsMessage(body);
+                      e.target.value = '';
+                    }}
+                  >
+                    <option value="">Choose...</option>
+                    {smsTemplates.map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <textarea
                 className="w-full bg-stone-950 border border-stone-800 p-3 text-stone-200 text-sm rounded-sm min-h-[100px]"
                 placeholder="Type your message..."

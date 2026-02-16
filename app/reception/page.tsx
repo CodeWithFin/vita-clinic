@@ -98,6 +98,7 @@ export default function ReceptionPage() {
   const [smsMessage, setSmsMessage] = useState('');
   const [smsSending, setSmsSending] = useState(false);
   const [smsResult, setSmsResult] = useState<{ sent: boolean; reason?: string } | null>(null);
+  const [smsTemplates, setSmsTemplates] = useState<{ id: number; name: string; slug: string; body: string }[]>([]);
 
   const services = [
     "Timeless Facial", "Hydra Facial", "Royal Facial", "Chemical Peels", 
@@ -1106,14 +1107,53 @@ export default function ReceptionPage() {
                                 {(selectedBooking.client_id != null || selectedBooking.phone) && (
                                   <div className="space-y-3">
                                     <p className="text-xs uppercase text-stone-500 tracking-wider">SMS</p>
-                                    <button
-                                      type="button"
-                                      onClick={() => { setShowSmsModal(true); setSmsMessage(''); setSmsResult(null); }}
-                                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-stone-800 text-stone-200 hover:bg-stone-700 rounded-sm text-xs font-medium uppercase tracking-wide transition-colors"
-                                    >
-                                      <MessageSquare className="w-4 h-4" />
-                                      Send SMS
-                                    </button>
+                                    <div className="grid grid-cols-1 gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={async () => {
+                                          setShowSmsModal(true);
+                                          setSmsMessage('');
+                                          setSmsResult(null);
+                                          try {
+                                            const r = await fetch('/api/sms/templates');
+                                            if (r.ok) setSmsTemplates(await r.json());
+                                          } catch { /* ignore */ }
+                                        }}
+                                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-stone-800 text-stone-200 hover:bg-stone-700 rounded-sm text-xs font-medium uppercase tracking-wide transition-colors"
+                                      >
+                                        <MessageSquare className="w-4 h-4" />
+                                        Send SMS
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={async () => {
+                                          try {
+                                            const tRes = await fetch('/api/sms/templates');
+                                            const list = tRes.ok ? await tRes.json() : [];
+                                            const t = list.find((x: { slug: string }) => x.slug === 'follow_up_care');
+                                            const name = selectedBooking.client_name || 'there';
+                                            const service = selectedBooking.services?.length ? selectedBooking.services.map((s: { service_type: string }) => s.service_type).join(', ') : selectedBooking.service_type || 'your treatment';
+                                            const care = 'please follow any instructions given by your therapist';
+                                            const body = t?.body
+                                              ? t.body.replace(/\{\{name\}\}/g, name).replace(/\{\{service\}\}/g, service).replace(/\{\{care_instructions\}\}/g, care)
+                                              : `Hi ${name}, hope you are well after your recent ${service}. Please follow any instructions given by your therapist. - Vitapharm`;
+                                            const payload: { message: string; client_id?: number; phone?: string } = { message: body };
+                                            if (selectedBooking.client_id != null) payload.client_id = selectedBooking.client_id;
+                                            else if (selectedBooking.phone) payload.phone = selectedBooking.phone;
+                                            const res = await fetch('/api/sms/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                                            const data = await res.json().catch(() => ({}));
+                                            if (data.sent) alert('Post-treatment SMS sent.');
+                                            else alert(data.reason || 'Failed to send.');
+                                          } catch (e) {
+                                            console.error(e);
+                                            alert('Failed to send.');
+                                          }
+                                        }}
+                                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-900/20 border border-blue-900/50 text-blue-400 hover:bg-blue-900/40 rounded-sm text-xs font-medium uppercase tracking-wide transition-colors"
+                                      >
+                                        Send post-treatment care SMS
+                                      </button>
+                                    </div>
                                   </div>
                                 )}
 
@@ -1183,6 +1223,31 @@ export default function ReceptionPage() {
                 </button>
               </div>
               <p className="text-stone-400 text-sm">To: {selectedBooking.client_name} {selectedBooking.phone && <span className="text-stone-500">({selectedBooking.phone})</span>}</p>
+              {smsTemplates.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <label className="text-stone-500 text-xs shrink-0">Use template:</label>
+                  <select
+                    className="bg-stone-950 border border-stone-800 px-3 py-2 text-stone-200 text-sm rounded-sm flex-1"
+                    value=""
+                    onChange={(e) => {
+                      const t = smsTemplates.find((x) => String(x.id) === e.target.value);
+                      if (!t) return;
+                      const name = selectedBooking.client_name || 'there';
+                      const service = selectedBooking.services?.length ? selectedBooking.services.map((s: { service_type: string }) => s.service_type).join(', ') : selectedBooking.service_type || 'your appointment';
+                      const dateStr = selectedBooking.appointment_date ? new Date(selectedBooking.appointment_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+                      const timeStr = selectedBooking.appointment_date ? new Date(selectedBooking.appointment_date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
+                      let body = t.body.replace(/\{\{name\}\}/g, name).replace(/\{\{service\}\}/g, service).replace(/\{\{date\}\}/g, dateStr).replace(/\{\{time\}\}/g, timeStr).replace(/\{\{reason\}\}/g, '').replace(/\{\{message\}\}/g, '').replace(/\{\{care_instructions\}\}/g, '');
+                      setSmsMessage(body);
+                      e.target.value = '';
+                    }}
+                  >
+                    <option value="">Choose...</option>
+                    {smsTemplates.map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <textarea
                 className="w-full bg-stone-950 border border-stone-800 p-3 text-stone-200 text-sm rounded-sm min-h-[100px]"
                 placeholder="Type your message..."

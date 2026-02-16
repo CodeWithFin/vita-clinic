@@ -4,8 +4,14 @@ import { sendSMS, formatPhoneNumber } from '@/lib/sms';
 
 export async function POST(req: Request) {
   try {
-    const { name, phone, service, date, time } = await req.json();
-    
+    let body: { name?: string; phone?: string; service?: string; date?: string; time?: string };
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    }
+    const { name, phone, service, date, time } = body;
+
     // Validate inputs
     if (!name || !phone || !service || !date || !time) {
         return NextResponse.json(
@@ -16,6 +22,12 @@ export async function POST(req: Request) {
 
     // Format phone number before DB operations
     const formattedPhone = formatPhoneNumber(String(phone));
+    if (!formattedPhone || formattedPhone.length < 10) {
+      return NextResponse.json(
+        { error: 'Invalid phone number' },
+        { status: 400 }
+      );
+    }
 
     // Combine date and time to ISO string for TIMESTAMP
     const appointmentDate = new Date(`${date}T${time}:00`);
@@ -36,23 +48,21 @@ export async function POST(req: Request) {
       // Update the user's name with the latest provided name
       await db.query('UPDATE users SET name = $1 WHERE id = $2', [name, userId]);
     } else {
-      // Create new user with phone
-      // Note: Ensure email uses 'DEFAULT' or we explicitly insert NULL if the column allows it
-      // but we removed email from the form.
-       const newUser = await db.query(
+      // Create new user with phone (email left NULL)
+      const newUser = await db.query(
         `INSERT INTO users (name, phone, password_hash) 
          VALUES ($1, $2, $3) 
          RETURNING id`,
-        [name, formattedPhone, 'guest_booking_placeholder'] 
+        [name.trim(), formattedPhone, 'guest_booking_placeholder']
       );
       userId = newUser.rows[0].id;
     }
-    
-    // 2. Create Appointment
+
+    // 2. Create Appointment (only columns that exist in base schema; migrations may add optional columns)
     await db.query(
       `INSERT INTO appointments (user_id, service_type, appointment_date, status)
        VALUES ($1, $2, $3, 'confirmed')`,
-       [userId, service, appointmentDate]
+      [userId, String(service).trim(), appointmentDate]
     );
 
     // 3. Send SMS confirmation (booking still succeeds if SMS fails)
@@ -69,11 +79,11 @@ export async function POST(req: Request) {
       ...(smsResult.sent ? {} : { smsReason: smsResult.reason }),
     });
 
-  } catch (error: any) {
-    console.error('Booking error:', error);
-    // Return detailed error for debugging (remove in production)
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error('Booking error:', err.message, err);
     return NextResponse.json(
-      { error: 'Internal Server Error', details: error.message },
+      { error: 'Internal Server Error', details: err.message },
       { status: 500 }
     );
   }

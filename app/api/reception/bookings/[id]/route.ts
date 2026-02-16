@@ -58,7 +58,15 @@ export async function PATCH(
         let clientId: number | null = null;
         let userId: number | null = null;
         if (updatedBooking.client_id) {
-          const clientRes = await db.query('SELECT name, phone, sms_opt_in FROM clients WHERE id = $1', [updatedBooking.client_id]);
+          let clientRes: { rows: { name: string; phone: string | null; sms_opt_in?: boolean }[] };
+          try {
+            clientRes = await db.query('SELECT name, phone, sms_opt_in FROM clients WHERE id = $1', [updatedBooking.client_id]);
+          } catch (e) {
+            const msg = (e as Error)?.message ?? String(e);
+            if (msg.includes('sms_opt_in') || msg.includes('column') || msg.includes('does not exist')) {
+              clientRes = await db.query('SELECT name, phone FROM clients WHERE id = $1', [updatedBooking.client_id]);
+            } else throw e;
+          }
           if (clientRes.rows[0] && clientRes.rows[0].sms_opt_in !== false) {
             name = clientRes.rows[0].name;
             phone = clientRes.rows[0].phone;
