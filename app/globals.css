@@ -9,6 +9,8 @@
 .font-display { font-family: 'Cinzel', serif; }
 .font-body { font-family: 'Lato', sans-serif; }
 .font-serif-custom { font-family: 'Cormorant Garamond', serif; }
+.font-outfit { font-family: 'Outfit', sans-serif; }
+.font-playfair { font-family: 'Playfair Display', serif; }
 
 /* Hide scrollbar for clean look */
 ::-webkit-scrollbar { width: 6px; }
